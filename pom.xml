@@ -50,7 +50,7 @@
 
 	<!-- Build settings -->
 	<build>
-		<defaultGoal>clean install</defaultGoal>
+		<defaultGoal>clean package</defaultGoal>
 		<!-- Resources -->
 		<resources>
 			<resource>
@@ -92,7 +92,7 @@
 					<properties>
 						<name>${project.name}</name>
 						<url>${project.organization.url}</url>
-						<copyright>Copyright (c) ${project.inceptionYear}-2012, ${project.organization.name}</copyright>
+						<copyright>Copyright (c) ${project.inceptionYear}-2014, ${project.organization.name}</copyright>
 					</properties>
 					<includes>
 						<include>src/main/java/**</include>
@@ -147,6 +147,11 @@
 						</goals>
 						<configuration>
 							<minimizeJar>true</minimizeJar>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>com.raphfrk.craftproxyclient.CraftProxyClient</mainClass>
+								</transformer>
+							</transformers>
 							<filters>
 								<filter>
 									<artifact>*:*</artifact>
