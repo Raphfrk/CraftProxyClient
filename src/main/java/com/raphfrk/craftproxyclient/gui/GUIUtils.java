@@ -21,20 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient;
+package com.raphfrk.craftproxyclient.gui;
 
-import com.raphfrk.craftproxyclient.crypt.Crypt;
-import com.raphfrk.craftproxyclient.gui.GUIUtils;
+import javax.swing.JOptionPane;
 
-public class CraftProxyClient {
-
-	public static void main(String[] args) {
-		
-		if (!Crypt.init()) {
-			GUIUtils.messageBox("Unable to load Bouncy Castle crypt provider");
-			return;
-		}
-		
-	}
+public class GUIUtils {
 	
+	public static void messageBox(String message) {
+		JOptionPane.showMessageDialog(null, message);
+	}
+
 }
