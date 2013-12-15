@@ -21,15 +21,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient;
+package com.raphfrk.craftproxyclient.net.types;
 
-import org.junit.Test;
+import java.nio.ByteBuffer;
 
-public class CraftProxyClientTest {
+public class IntType extends FixedSizeType<Integer> {
 	
-	@Test
-	public void test() {
-		// Placeholder
+	public IntType() {
+		super(4);
+	}
+
+	public boolean writeRaw(int data, ByteBuffer buf) {
+		if (buf.remaining() >= getFixedSize()) {
+			putByte(data >> 24, buf);
+			putByte(data >> 16, buf);
+			putByte(data >> 8, buf);
+			putByte(data >> 0, buf);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public static int getRaw(ByteBuffer buf) {
+		int x = 0;
+		x |= getByte(buf) << 24;
+		x |= getByte(buf) << 16;
+		x |= getByte(buf) << 8;
+		x |= getByte(buf) << 0;
+		return x;
+	}
+	
+	@Override
+	public boolean write(Integer data, ByteBuffer buf) {
+		return writeRaw(data, buf);
+	}
+
+	@Override
+	public Integer get(ByteBuffer buf) {
+		return getRaw(buf);
 	}
 
 }
