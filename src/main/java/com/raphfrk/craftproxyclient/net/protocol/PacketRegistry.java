@@ -26,11 +26,24 @@ package com.raphfrk.craftproxyclient.net.protocol;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
+import com.raphfrk.craftproxyclient.net.types.ByteSizedByteArrayType;
 import com.raphfrk.craftproxyclient.net.types.ByteType;
 import com.raphfrk.craftproxyclient.net.types.FixedSizeType;
+import com.raphfrk.craftproxyclient.net.types.IntType;
+import com.raphfrk.craftproxyclient.net.types.LongType;
+import com.raphfrk.craftproxyclient.net.types.ShortSizedByteArrayType;
+import com.raphfrk.craftproxyclient.net.types.ShortType;
 import com.raphfrk.craftproxyclient.net.types.Type;
 
 public class PacketRegistry {
+	
+	protected Type<Byte> tByte = new ByteType();
+	protected Type<Integer> tInt = new IntType();
+	protected Type<Short> tShort = new ShortType();
+	protected Type<Long> tLong = new LongType();
+	
+	protected Type<byte[]> tByteByteArray = new ByteSizedByteArrayType();
+	protected Type<byte[]> tShortByteArray = new ShortSizedByteArrayType();
 	
 	@SuppressWarnings("rawtypes")
 	private final Type[][] packetInfo = new Type[256][];
@@ -112,6 +125,10 @@ public class PacketRegistry {
 	
 	public Packet getPacket(int id, Object[] values, ByteBuffer buf, int offset, int length) {
 		return new Packet(id, values, buf, offset, length);
+	}
+	
+	public void handleLogin(Handshake handshake) {
+		throw new IllegalStateException("Base class cannot handle login");
 	}
 
 }

@@ -24,14 +24,15 @@
 package com.raphfrk.craftproxyclient.net;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
 
-import com.raphfrk.craftproxyclient.net.protocol.Protocol;
+import org.junit.Test;
 
-public class Connection extends Thread {
+public class ConnectionListenerTest {
 	
-	public Connection(SocketChannel client, SocketChannel server, Protocol protocol) throws IOException {
-		
+	@Test
+	public void listenTest() throws IOException, InterruptedException {
+		ConnectionListener listener = new ConnectionListener(12345);
+		listener.join();
 	}
-
+	
 }

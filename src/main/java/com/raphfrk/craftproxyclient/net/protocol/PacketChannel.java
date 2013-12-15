@@ -26,27 +26,50 @@ package com.raphfrk.craftproxyclient.net.protocol;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 import com.raphfrk.craftproxyclient.net.types.Type;
 
 public class PacketChannel {
 	
-	private final ReadableByteChannel channel;
+	private final ByteChannel channel;
 	private final ByteBuffer buf;
-	private final PacketRegistry registry;
+	private final ByteBuffer writeBuf;
+	private PacketRegistry registry;
 	
 	private int id = -1;
 	private int read = 0;
 	private int mark = -1;
 	private int packetStart = -1;
 	
-	public PacketChannel(ReadableByteChannel channel, int bufferSize, PacketRegistry registry) {
+	public PacketChannel(ByteChannel channel, int readBufferSize) {
+		this(channel, readBufferSize, 0);
+	}
+	
+	public PacketChannel(ByteChannel channel, int readBufferSize, int writeBufferSize) {
+		this(channel, readBufferSize, writeBufferSize, null);
+	}
+	
+	public PacketChannel(ByteChannel channel, int readBufferSize, PacketRegistry registry) {
+		this(channel, readBufferSize, 0, registry);
+	}
+	
+	public PacketChannel(ByteChannel channel, int readBufferSize, int writeBufferSize, PacketRegistry registry) {
 		this.channel = channel;
-		this.buf = ByteBuffer.allocateDirect(bufferSize);
+		this.buf = ByteBuffer.allocateDirect(readBufferSize);
+		this.writeBuf = ByteBuffer.allocateDirect(writeBufferSize);
 		this.registry = registry;
 		this.setReading();
+	}
+	
+	/**
+	 * Sets the registry to use for this packet channel
+	 * 
+	 * @param registry
+	 */
+	public void setRegistry(PacketRegistry registry) {
+		this.registry = registry;
 	}
 	
 	/**
@@ -78,6 +101,32 @@ public class PacketChannel {
 		Packet packet = registry.getPacket(id, values, buf, packetStart, totalLength);
 		id = -1;
 		return packet;
+	}
+	
+	/**
+	 * Writes a packet to the channel
+	 * 
+	 * @param p
+	 * @throws IOException
+	 */
+	@SuppressWarnings("unchecked")
+	public void writePacket(Packet p) throws IOException {
+		@SuppressWarnings("rawtypes")
+		Type[] types = registry.getPacketInfo(p.getId());
+		
+		writeBuf.clear();
+
+		for (int i = 0; i < types.length; i++) {
+			if (!types[i].write(p.getField(i), writeBuf)) {
+				throw new IOException("Buffer full when writing packet");
+			}
+		}
+
+		writeBuf.flip();
+	
+		while (writeBuf.hasRemaining()) {
+			channel.write(writeBuf);
+		}
 	}
 	
 	/**

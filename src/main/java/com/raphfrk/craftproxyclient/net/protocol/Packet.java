@@ -33,6 +33,14 @@ public class Packet {
 	protected final byte[] arr;
 	protected final int id;
 	
+	public Packet(Packet packet) {
+		this.values = new Object[packet.values.length];
+		System.arraycopy(packet.values, 0, this.values, 0, packet.values.length);
+		this.arr = new byte[packet.arr.length];
+		System.arraycopy(packet.arr, 0, this.arr, 0, packet.arr.length);
+		this.id = packet.id;
+	}
+	
 	public Packet(int id, Object[] values, ByteBuffer buf, int off, int len) {
 		this.id = id;
 		this.values = new Object[values.length];
@@ -41,6 +49,17 @@ public class Packet {
 		for (int i = 0; i < len; i++) {
 			arr[i] = buf.get(i + off);
 		}
+	}
+	
+	public Packet(int id, Object[] values) {
+		this.id = id;
+		this.values = new Object[values.length];
+		System.arraycopy(values, 0, this.values, 0, values.length);
+		this.arr = null;
+	}
+	
+	public int getId() {
+		return id;
 	}
 	
 	public Object getField(int id) {

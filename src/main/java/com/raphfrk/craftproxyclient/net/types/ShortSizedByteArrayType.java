@@ -21,17 +21,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net;
+package com.raphfrk.craftproxyclient.net.types;
 
-import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import java.nio.ByteBuffer;
 
-import com.raphfrk.craftproxyclient.net.protocol.Protocol;
+public class ShortSizedByteArrayType extends Type<byte[]> {
 
-public class Connection extends Thread {
+	public boolean writeRaw(byte[] data, ByteBuffer buf) {
+		if (buf.remaining() >= data.length + 2) {
+			buf.putShort((short) data.length);
+			buf.put(data);
+			return true;
+		} else {
+			return false;
+		}
+	}
 	
-	public Connection(SocketChannel client, SocketChannel server, Protocol protocol) throws IOException {
-		
+	public static byte[] getRaw(ByteBuffer buf) {
+		byte[] arr = new byte[getLengthRaw(buf) - 2];
+		buf.getShort();
+		buf.get(arr);
+		return arr;
+	}
+	
+	public static int getLengthRaw(ByteBuffer buf) {
+		if (buf.remaining() < 2) {
+			return -1;
+		}
+		return 2 + (buf.get(buf.position()) & 0xFF);
+	}
+	
+	@Override
+	public byte[] get(ByteBuffer buf) {
+		return getRaw(buf);
+	}
+
+	@Override
+	public int getLength(ByteBuffer buf) {
+		return getLengthRaw(buf);
+	}
+
+	@Override
+	public boolean write(byte[] data, ByteBuffer buf) {
+		return writeRaw(data, buf);
 	}
 
 }

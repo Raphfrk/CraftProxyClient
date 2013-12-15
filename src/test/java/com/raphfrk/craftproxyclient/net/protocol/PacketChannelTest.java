@@ -23,14 +23,16 @@
  */
 package com.raphfrk.craftproxyclient.net.protocol;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Random;
 
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
 import com.raphfrk.craftproxyclient.net.types.ByteSizedByteArrayType;
@@ -70,7 +72,9 @@ public class PacketChannelTest {
 		ReadableByteChannel readable = new ReadableByteChannelImpl(arr, pos);
 		WritableByteChannelImpl writable = new WritableByteChannelImpl();
 		
-		PacketChannel channel = new PacketChannel(readable, 640, registry);
+		ByteChannelImpl combined = new ByteChannelImpl(readable, writable);
+		
+		PacketChannel channel = new PacketChannel(combined, 640, registry);
 		
 		try {
 			while (true) {
@@ -92,7 +96,7 @@ public class PacketChannelTest {
 	
 	@Test
 	public void loopDiscardTest() throws IOException {
-		for (int i = 0; i < 2048; i++) {
+		for (int i = 0; i < 512; i++) {
 			discardTest();
 		}
 	}
@@ -125,7 +129,9 @@ public class PacketChannelTest {
 		ReadableByteChannel readable = new ReadableByteChannelImpl(arr, pos);
 		WritableByteChannelImpl writable = new WritableByteChannelImpl();
 		
-		PacketChannel channel = new PacketChannel(readable, 64, registry);
+		ByteChannelImpl combined = new ByteChannelImpl(readable, writable);
+		
+		PacketChannel channel = new PacketChannel(combined, 64, registry);
 		
 		try {
 			while (true) {
@@ -167,7 +173,9 @@ public class PacketChannelTest {
 		
 		ReadableByteChannel readable = new ReadableByteChannelImpl(arr, l);
 		
-		PacketChannel channel = new PacketChannel(readable, 64, registry);
+		ByteChannelImpl combined = new ByteChannelImpl(readable, null);
+		
+		PacketChannel channel = new PacketChannel(combined, 64, registry);
 		
 		for (int i = 0; i < 5; i++) {
 			int id = channel.getPacketId();
@@ -211,7 +219,9 @@ public class PacketChannelTest {
 		
 		ReadableByteChannel readable = new ReadableByteChannelImpl(arr, l);
 		
-		PacketChannel channel = new PacketChannel(readable, 256, registry);
+		ByteChannelImpl combined = new ByteChannelImpl(readable, null);
+		
+		PacketChannel channel = new PacketChannel(combined, 256, registry);
 		
 		for (int i = 0; i < 3; i++) {
 			int id = channel.getPacketId();
@@ -277,7 +287,9 @@ public class PacketChannelTest {
 		
 		ReadableByteChannel readable = new ReadableByteChannelImpl(arr, l);
 		
-		PacketChannel channel = new PacketChannel(readable, 64, registry);
+		ByteChannelImpl combined = new ByteChannelImpl(readable, null);
+		
+		PacketChannel channel = new PacketChannel(combined, 64, registry);
 		
 		for (int i = 0; i < 5; i++) {
 			int id = channel.getPacketId();
@@ -294,7 +306,8 @@ public class PacketChannelTest {
 			assertEquals("Unexcepted packet id", 1, channel.getPacketId());
 			Packet p = channel.getPacket();
 			assertTrue("Opcode not a byte", p.getField(0).getClass().equals(Byte.class));
-			assertTrue("First field not an Integer", p.getField(1).getClass().equals(Long.class));		}
+			assertTrue("First field not an Integer", p.getField(1).getClass().equals(Long.class));		
+		}
 		
 		boolean thrown = false;
 		try {
@@ -304,6 +317,46 @@ public class PacketChannelTest {
 		}
 		assertTrue("No EOF exception thrown", thrown);
 		
+	}
+	
+	@Test
+	public void writePacketTest() throws IOException {
+
+		PacketRegistry registry = new PacketRegistry()
+		.register(0, new Type[] {new IntType(), new ByteSizedByteArrayType(), new ShortType(), new IntType()})
+		.register(1, new Type[] {new LongType()})
+		.done();
+
+		byte[] arr = new byte[256];
+
+		int l = 0;
+		
+		ReadableByteChannel readable = new ReadableByteChannelImpl(arr, l);
+		WritableByteChannelImpl writable = new WritableByteChannelImpl();
+		
+		ByteChannelImpl combined = new ByteChannelImpl(readable, writable);
+		
+		PacketChannel channel = new PacketChannel(combined, 64, 64, registry);
+
+		Packet p1 = new Packet(1, new Object[] {(byte) 1, 7L});
+		Packet p0 = new Packet(0, new Object[] {(byte) 0, 9, new byte[] {0, 1, -1}, (short) 12, 0x12345678});
+		
+		channel.writePacket(p1);
+		channel.writePacket(p0);
+		
+		ByteBuffer buf = ByteBuffer.wrap(writable.toByteArray());
+
+		assertTrue("Incorrect opcode for first packet", buf.get() == 1);
+		assertTrue("Incorrect long data for first packet", buf.getLong() == 7L);
+		assertTrue("Incorrect opcode for second packet", buf.get() == 0);
+		assertTrue("Incorrect int data for second packet", buf.getInt() == 9);
+		assertTrue("Incorrect byte array length for second packet", buf.get() == 3);
+		assertTrue("Incorrect byte array data[0] for second packet", buf.get() == 0);
+		assertTrue("Incorrect byte array data[1] for second packet", buf.get() == 1);
+		assertTrue("Incorrect byte array data[2] for second packet", buf.get() == -1);
+		assertTrue("Incorrect short data for second packet", buf.getShort() == 12);
+		assertTrue("Incorrect int data for second packet", buf.getInt() == 0x12345678);
+	
 	}
 
 	public int addPacketZero(byte[] arr, int pos) {

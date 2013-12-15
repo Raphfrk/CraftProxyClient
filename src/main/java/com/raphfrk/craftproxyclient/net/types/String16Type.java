@@ -21,17 +21,55 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net;
+package com.raphfrk.craftproxyclient.net.types;
 
-import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import java.nio.ByteBuffer;
 
-import com.raphfrk.craftproxyclient.net.protocol.Protocol;
+public class String16Type extends Type<String> {
 
-public class Connection extends Thread {
+	public boolean writeRaw(String data, ByteBuffer buf) {
+		if (buf.remaining() >= (data.length() << 1) + 2) {
+			buf.putShort((short) data.length());
+			char[] chars = data.toCharArray();
+			for (int i = 0; i < chars.length; i++) {
+				buf.putChar(chars[i]);
+			}
+			return true;
+		} else {
+			return false;
+		}
+	}
 	
-	public Connection(SocketChannel client, SocketChannel server, Protocol protocol) throws IOException {
-		
+	public static String getRaw(ByteBuffer buf) {
+		char[] chars = new char[(getLengthRaw(buf) >> 1) - 1];
+		buf.getShort();
+		for (int i = 0; i < chars.length; i++) {
+			chars[i] = buf.getChar();
+		}
+		return new String(chars);
+	}
+	
+	public static int getLengthRaw(ByteBuffer buf) {
+		if (buf.remaining() < 2) {
+			return -1;
+		}
+		short length = buf.getShort(buf.position());
+		return 2 + (length << 1);
+	}
+	
+	@Override
+	public String get(ByteBuffer buf) {
+		return getRaw(buf);
+	}
+
+	@Override
+	public int getLength(ByteBuffer buf) {
+		return getLengthRaw(buf);
+	}
+
+	@Override
+	public boolean write(String data, ByteBuffer buf) {
+		return writeRaw(data, buf);
 	}
 
 }
