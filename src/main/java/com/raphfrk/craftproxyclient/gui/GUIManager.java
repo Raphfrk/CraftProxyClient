@@ -35,13 +35,12 @@ import com.raphfrk.craftproxyclient.net.auth.AuthManager;
 
 public class GUIManager {
 	
-	private static JSONObject loginDetails = null;
-	
 	public static void messageBox(String message) {
 		JOptionPane.showMessageDialog(null, message);
 	}
 	
 	public static JSONObject getLoginDetails() {
+		JSONObject loginDetails = AuthManager.getLoginDetails();
 		if (loginDetails != null) {
 			return loginDetails;
 		}
@@ -49,8 +48,7 @@ public class GUIManager {
 		if (loginDetails != null) {
 			return loginDetails;
 		}
-		loginDetails = getNewLoginDetails();;
-		return loginDetails;
+		return getNewLoginDetails();
 	}
 	
 	public static JSONObject getPreviousLoginDetails() {
@@ -75,6 +73,7 @@ public class GUIManager {
 	public static JSONObject getNewLoginDetails() {
 		BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
 		try {
+			JSONObject loginDetails = null;
 			do {
 				System.out.println("Please enter email address");
 				String email = input.readLine();

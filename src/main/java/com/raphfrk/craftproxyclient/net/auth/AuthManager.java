@@ -27,30 +27,29 @@ public class AuthManager {
 	private final static String authServer = " https://authserver.mojang.com";
 	private final static String tokenFilename = "access-token.1.64.json";
 
+	private static JSONObject loginDetails;
+	
+	public static JSONObject getLoginDetails() {
+		return loginDetails;
+	}
+	
 	public static JSONObject refreshAccessToken() {
 		
 		JSONObject obj = readAccessToken();
 		
-		if (obj == null) {
-			System.out.println("Unable to read");
+		JSONObject stripped = stripLoginDetails(obj, false);
+		if (stripped == null) {
 			return null;
 		}
 		
-		String clientToken = (String) obj.get("clientToken");
-		String accessToken = (String) obj.get("accessToken");
+		JSONObject reply = sendRequest(stripped, "refresh");
 		
-		if (clientToken == null || accessToken == null) {
-			System.out.println("Tag missing");
+		stripped = stripLoginDetails(reply, true);
+		if (stripped == null) {
 			return null;
 		}
 		
-		JSONObject reply = sendRequest(obj, "refresh");
-		
-		System.out.println(reply);
-		
-		if (reply == null) {
-			return null;
-		}
+		AuthManager.loginDetails = reply;
 		
 		return reply;
 		
@@ -87,22 +86,23 @@ public class AuthManager {
 		
 		JSONObject reply = sendRequest(obj, "authenticate");
 		
-		System.out.println("Reply: " + reply);
-		
 		if (reply == null) {
 			return null;
 		}
 		
-		String accessToken = (String) reply.get("accessToken");
+		JSONObject stripped = stripLoginDetails(reply, true);
+		if (stripped == null) {
+			return null;
+		}
 		
-		writeAccessToken(clientToken, accessToken);
+		writeAccessToken(stripped);
+		
+		AuthManager.loginDetails = reply;
 		
 		return reply;
 	}
-
 	
 	public static JSONObject sendRequest(JSONObject request, String endpoint) {
-		System.out.println("Attempting request " + request);
 		URL url;
 		try {
 			url = new URL(authServer + "/" + endpoint);
@@ -122,8 +122,6 @@ public class AuthManager {
 				request.writeJSONString(writer);
 				writer.flush();
 				writer.close();
-				
-				System.out.println("Response code " + con.getResponseCode());
 				
 				if (con.getResponseCode() != 200) {
 					return null;
@@ -169,16 +167,9 @@ public class AuthManager {
 		return null;
 	}
 	
-	@SuppressWarnings("unchecked")
-	private static void writeAccessToken(String clientToken, String accessToken) {
+	private static void writeAccessToken(JSONObject obj) {
 		Writer writer = null;
 		try {
-			JSONObject obj = new JSONObject();
-			obj.put("clientToken", clientToken);
-			obj.put("accessToken", accessToken);
-			
-			System.out.println("Writing " + obj);
-			
 			writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tokenFilename), StandardCharsets.UTF_8));
 			obj.writeJSONString(writer);
 			
@@ -192,5 +183,44 @@ public class AuthManager {
 			}
 		}
 	}
+	
+	@SuppressWarnings("unchecked")
+	private static JSONObject stripLoginDetails(JSONObject obj, boolean includeUsername) {
+		if (obj == null) {
+			return null;
+		}
+		
+		String clientToken = (String) obj.get("clientToken");
+		String accessToken = (String) obj.get("accessToken");
+		
+		if (clientToken == null || accessToken == null) {
+			return null;
+		}
+		
+		JSONObject selectedProfile = (JSONObject) obj.get("selectedProfile");
+		
+		if (selectedProfile == null) {
+			return null;
+		}
+		
+		String username = (String) selectedProfile.get("name");
+		if (username == null) {
+			return null;
+		}
+		JSONObject stripped = new JSONObject();
+		
+		stripped.put("accessToken", accessToken);
+		stripped.put("clientToken", clientToken);
+		
+		if (includeUsername) {
+			JSONObject selectedProfileNew = new JSONObject();
+			selectedProfileNew.put("name", username);
+
+			stripped.put("selectedProfile", selectedProfileNew);
+		}
+		return stripped;
+		
+	}
+
 
 }
