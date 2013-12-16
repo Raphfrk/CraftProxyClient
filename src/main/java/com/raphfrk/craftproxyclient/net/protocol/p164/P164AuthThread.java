@@ -21,49 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.types;
+package com.raphfrk.craftproxyclient.net.protocol.p164;
 
-import java.nio.ByteBuffer;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
-public class ShortSizedByteArrayType extends Type<byte[]> {
+import javax.net.ssl.HttpsURLConnection;
 
-	public boolean writeRaw(byte[] data, ByteBuffer buf) {
-		if (buf.remaining() >= data.length + 2) {
-			buf.putShort((short) data.length);
-			buf.put(data);
-			return true;
-		} else {
-			return false;
-		}
-	}
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import com.raphfrk.craftproxyclient.crypt.Crypt;
+
+
+public class P164AuthThread {
 	
-	public static byte[] getRaw(ByteBuffer buf) {
-		byte[] arr = new byte[getLengthRaw(buf) - 2];
-		buf.getShort();
-		buf.get(arr);
-		return arr;
-	}
-	
-	public static int getLengthRaw(ByteBuffer buf) {
-		if (buf.remaining() < 2) {
-			return -1;
-		}
-		return 2 + (buf.getShort(buf.position()) & 0xFF);
-	}
-	
-	@Override
-	public byte[] get(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-
-	@Override
-	public int getLength(ByteBuffer buf) {
-		return getLengthRaw(buf);
-	}
-
-	@Override
-	public boolean write(byte[] data, ByteBuffer buf) {
-		return writeRaw(data, buf);
-	}
 
 }

@@ -21,14 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.gui;
+package com.raphfrk.craftproxyclient.net.protocol.p164;
 
-import javax.swing.JOptionPane;
+import com.raphfrk.craftproxyclient.net.protocol.Packet;
 
-public class GUIUtils {
+public class P164EncryptionKeyRequest extends Packet {
 	
-	public static void messageBox(String message) {
-		JOptionPane.showMessageDialog(null, message);
+	public P164EncryptionKeyRequest(Packet p) {
+		super(p);
+	}
+	
+	public P164EncryptionKeyRequest(int id, String serverId, byte[] pubKey, byte[] token) {
+		super(0xFD, new Object[] {(byte) 0xFD, serverId, pubKey, token});
+	}
+	
+	
+	public String getServerId() {
+		return (String) getField(1);
+	}
+	
+	public byte[] getPubKey() {
+		return (byte[]) getField(2);
+	}
+	
+	public byte[] getToken() {
+		return (byte[]) getField(3);
 	}
 
 }

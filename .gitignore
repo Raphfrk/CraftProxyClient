@@ -61,3 +61,6 @@ nb-configuration.xml
 *.iml
 *.ipr
 *.iws
+
+# Output files
+access-token.1.64.json

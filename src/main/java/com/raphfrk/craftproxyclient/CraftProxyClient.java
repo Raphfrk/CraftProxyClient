@@ -23,17 +23,28 @@
  */
 package com.raphfrk.craftproxyclient;
 
+import org.json.simple.JSONObject;
+
 import com.raphfrk.craftproxyclient.crypt.Crypt;
-import com.raphfrk.craftproxyclient.gui.GUIUtils;
+import com.raphfrk.craftproxyclient.gui.GUIManager;
 
 public class CraftProxyClient {
 
 	public static void main(String[] args) {
 		
 		if (!Crypt.init()) {
-			GUIUtils.messageBox("Unable to load Bouncy Castle crypt provider");
+			GUIManager.messageBox("Unable to load Bouncy Castle crypt provider");
 			return;
 		}
+		
+		JSONObject loginDetails = GUIManager.getLoginDetails();
+		
+		if (loginDetails == null) {
+			GUIManager.messageBox("Unknown login details");
+			return;
+		}
+		
+		System.out.println("Login details " + loginDetails);
 		
 	}
 	

@@ -136,7 +136,7 @@ public class Crypt {
 		return r;
 	}
 	
-	public long getLong() {
+	public static long getLong() {
 		SecureRandom r = getSecureRandom();
 		try {
 			return r.nextLong();
@@ -145,7 +145,7 @@ public class Crypt {
 		}
 	}
 	
-	public int getInt() {
+	public static int getInt() {
 		SecureRandom r = getSecureRandom();
 		try {
 			return r.nextInt();
@@ -154,7 +154,7 @@ public class Crypt {
 		}
 	}
 	
-	public void getBytes(byte[] arr) {
+	public static void getBytes(byte[] arr) {
 		SecureRandom r = getSecureRandom();
 		try {
 			r.nextBytes(arr);

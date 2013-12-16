@@ -23,6 +23,8 @@
  */
 package com.raphfrk.craftproxyclient.net.protocol;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
@@ -127,7 +129,11 @@ public class PacketRegistry {
 		return new Packet(id, values, buf, offset, length);
 	}
 	
-	public void handleLogin(Handshake handshake) {
+	public void sendKick(String message, PacketChannel client) throws IOException {
+		throw new IllegalStateException("Base class cannot send kick message");
+	}
+	
+	public void handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
 		throw new IllegalStateException("Base class cannot handle login");
 	}
 

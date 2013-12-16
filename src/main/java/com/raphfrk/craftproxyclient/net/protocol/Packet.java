@@ -43,7 +43,7 @@ public class Packet {
 	
 	public Packet(int id, Object[] values, ByteBuffer buf, int off, int len) {
 		this.id = id;
-		this.values = new Object[values.length];
+		this.values = new Object[values.length ];
 		System.arraycopy(values, 0, this.values, 0, values.length);
 		this.arr = new byte[len];
 		for (int i = 0; i < len; i++) {
@@ -64,6 +64,10 @@ public class Packet {
 	
 	public Object getField(int id) {
 		return values[id];
+	}
+	
+	public void setField(int id, Object value) {
+		values[id] = value;
 	}
 	
 	public byte[] getSerialized() {

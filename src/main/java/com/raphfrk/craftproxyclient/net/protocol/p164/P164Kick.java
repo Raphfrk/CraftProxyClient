@@ -21,49 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.types;
+package com.raphfrk.craftproxyclient.net.protocol.p164;
 
-import java.nio.ByteBuffer;
+import com.raphfrk.craftproxyclient.net.protocol.Handshake;
+import com.raphfrk.craftproxyclient.net.protocol.Packet;
 
-public class ShortSizedByteArrayType extends Type<byte[]> {
+public class P164Kick extends Packet implements Handshake {
 
-	public boolean writeRaw(byte[] data, ByteBuffer buf) {
-		if (buf.remaining() >= data.length + 2) {
-			buf.putShort((short) data.length);
-			buf.put(data);
-			return true;
-		} else {
-			return false;
-		}
+	public P164Kick(String message) {
+		super(0xFF, new Object[] {(byte) 0xFF, message});
 	}
 	
-	public static byte[] getRaw(ByteBuffer buf) {
-		byte[] arr = new byte[getLengthRaw(buf) - 2];
-		buf.getShort();
-		buf.get(arr);
-		return arr;
+	public P164Kick(Packet p) {
+		super(p);
 	}
 	
-	public static int getLengthRaw(ByteBuffer buf) {
-		if (buf.remaining() < 2) {
-			return -1;
-		}
-		return 2 + (buf.getShort(buf.position()) & 0xFF);
-	}
-	
-	@Override
-	public byte[] get(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-
-	@Override
-	public int getLength(ByteBuffer buf) {
-		return getLengthRaw(buf);
-	}
-
-	@Override
-	public boolean write(byte[] data, ByteBuffer buf) {
-		return writeRaw(data, buf);
+	public String getMessage() {
+		return (String) getField(1);
 	}
 
 }
