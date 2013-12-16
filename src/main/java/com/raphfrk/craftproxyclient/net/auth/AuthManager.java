@@ -49,7 +49,9 @@ public class AuthManager {
 			return null;
 		}
 		
-		AuthManager.loginDetails = reply;
+		writeAccessToken(stripped);
+		
+		AuthManager.loginDetails = stripped;
 		
 		return reply;
 		
@@ -97,7 +99,7 @@ public class AuthManager {
 		
 		writeAccessToken(stripped);
 		
-		AuthManager.loginDetails = reply;
+		AuthManager.loginDetails = stripped;
 		
 		return reply;
 	}
