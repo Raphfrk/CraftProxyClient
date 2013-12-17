@@ -132,6 +132,7 @@ public class PacketChannelTest {
 		ByteChannelImpl combined = new ByteChannelImpl(readable, writable);
 		
 		PacketChannel channel = new PacketChannel(combined, 64, registry);
+		channel.setWrappedChannel(channel.getRawChannel());
 		
 		try {
 			while (true) {

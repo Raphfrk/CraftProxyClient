@@ -29,11 +29,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.WritableByteChannel;
 
+import com.raphfrk.craftproxyclient.net.SingleByteByteChannelWrapper;
 import com.raphfrk.craftproxyclient.net.types.Type;
 
 public class PacketChannel {
 	
-	private final ByteChannel channel;
+	private final ByteChannel rawChannel;
+	private ByteChannel channel;
 	private final ByteBuffer buf;
 	private final ByteBuffer writeBuf;
 	private PacketRegistry registry;
@@ -56,7 +58,8 @@ public class PacketChannel {
 	}
 	
 	public PacketChannel(ByteChannel channel, int readBufferSize, int writeBufferSize, PacketRegistry registry) {
-		this.channel = channel;
+		this.rawChannel = channel;
+		this.channel = new SingleByteByteChannelWrapper(this.rawChannel);
 		this.buf = ByteBuffer.allocateDirect(readBufferSize);
 		this.writeBuf = ByteBuffer.allocateDirect(writeBufferSize);
 		this.registry = registry;
@@ -70,6 +73,24 @@ public class PacketChannel {
 	 */
 	public void setRegistry(PacketRegistry registry) {
 		this.registry = registry;
+	}
+	
+	/**
+	 * Gets the raw channel, without any channel wrapper
+	 * 
+	 * @return
+	 */
+	public ByteChannel getRawChannel() {
+		return rawChannel;
+	}
+	
+	/**
+	 * Sets the wrapped channel.
+	 * 
+	 * @param channel
+	 */
+	public void setWrappedChannel(ByteChannel channel) {
+		this.channel = channel;
 	}
 	
 	/**
@@ -267,7 +288,7 @@ public class PacketChannel {
 		try {
 			while (bytes > 0) {
 				int r = channel.read(buf);
-				printBuffer(buf);
+
 				bytes -= r;
 				if (r == 0 && bytes > 0 && buf.remaining() == 0) {
 					if (getEffectiveMark() > 0) {
