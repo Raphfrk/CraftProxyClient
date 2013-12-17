@@ -180,19 +180,34 @@ public class AuthManager {
 		
 	}
 	
+	public static String getUsername() {
+		if (loginDetails == null) {
+			return null;
+		}
+		JSONObject profile = (JSONObject) loginDetails.get("selectedProfile");
+		
+		return (String) profile.get("name");
+	}
+	
+	public static String getAccessToken() {
+		if (loginDetails == null) {
+			return null;
+		}
+		return (String) loginDetails.get("accessToken");
+	}
+	
 	public static boolean authServer(String hash) {
 		URL url;
 		try {
 			if (loginDetails == null) {
 				return false;
 			}
-			JSONObject profile = (JSONObject) loginDetails.get("selectedProfile");
-			
+
 			String username;
 			String accessToken;
 			try {
-				username = URLEncoder.encode((String) profile.get("name"), "UTF-8");
-				accessToken = URLEncoder.encode((String) loginDetails.get("accessToken"), "UTF-8");
+				username = URLEncoder.encode(getUsername(), "UTF-8");
+				accessToken = URLEncoder.encode(getAccessToken(), "UTF-8");
 				hash = URLEncoder.encode(hash, "UTF-8");
 			} catch (UnsupportedEncodingException e) {
 				return false;

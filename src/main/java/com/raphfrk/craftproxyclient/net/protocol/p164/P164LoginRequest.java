@@ -21,29 +21,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.protocol;
+package com.raphfrk.craftproxyclient.net.protocol.p164;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
+import com.raphfrk.craftproxyclient.net.protocol.Packet;
 
-public class Protocol {
+public class P164LoginRequest extends Packet {
 	
-	private final PacketRegistry registry;
+	public P164LoginRequest(Packet p) {
+		super(p);
+	}
 	
-	protected Protocol(PacketRegistry registry) {
-		this.registry = registry;
+	public P164LoginRequest(int entityId, String worldType, byte gamemode, byte dimension, byte difficulty, byte none, byte maxPlayers) {
+		super(0x01, new Object[] {(byte) 0x01, entityId, worldType, gamemode, dimension, difficulty, none, maxPlayers});
+	}
+	
+	
+	public int getEntityId() {
+		return (Integer) getField(1);
+	}
+	
+	public String getWorldType() {
+		return (String) getField(2);
+	}
+	
+	public byte getGameMode() {
+		return (Byte) getField(3);
+	}
+	
+	public byte getDimension() {
+		return (byte) getField(4);
+	}
+	
+	public byte getDifficulty() {
+		return (byte) getField(5);
+	}
+	
+	public byte getNone() {
+		return (byte) getField(6);
+	}
+	
+	public byte getMaxPlayers() {
+		return (byte) getField(7);
 	}
 
-	public PacketRegistry getPacketRegistry() {
-		return registry;
-	}
-	
-	public void sendKick(String message, PacketChannel client) throws IOException {
-		throw new IllegalStateException("Base Protocol class cannot send kick");
-	}
-	
-	public boolean handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
-		throw new IllegalStateException("Base Protocol class cannot handle login");
-	}
-	
 }

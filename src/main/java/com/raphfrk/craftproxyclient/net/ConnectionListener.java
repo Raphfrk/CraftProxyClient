@@ -61,11 +61,12 @@ public class ConnectionListener extends Thread {
 				close();
 				break;
 			}
+			Protocol protocol = null;
+			PacketChannel client = null;
 			try {
-				PacketChannel client = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+				client = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 				try {
 					int id = client.getPacketId();
-					Protocol protocol = null;
 					Handshake handshake = null;
 
 					if (id == 2) {
@@ -102,6 +103,9 @@ public class ConnectionListener extends Thread {
 				}
 			} finally {
 				try {
+					if (protocol != null && client != null) {
+						protocol.sendKick("Closing connection", client);
+					}
 					c.close();
 				} catch (IOException e) {
 				}

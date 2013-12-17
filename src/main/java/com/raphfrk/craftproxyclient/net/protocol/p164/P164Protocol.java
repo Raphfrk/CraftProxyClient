@@ -55,9 +55,15 @@ public class P164Protocol extends Protocol {
 	}
 
 	@Override
-	public void handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
+	public boolean handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
 		
 		P164Handshake h = (P164Handshake) handshake;
+
+		String username = h.getUsername();
+		if (username == null || !username.equals(AuthManager.getUsername())) {
+			sendKick("Login mismatch, proxy logged as " + AuthManager.getUsername() + " client logged in as " + username, client);
+			return false;
+		}
 		h.setServerPort(serverAddr.getPort());
 		h.setServerhost(serverAddr.getHostString());
 		server.writePacket(h);
@@ -65,27 +71,31 @@ public class P164Protocol extends Protocol {
 		int id = server.getPacketId();
 		if (id != 0xFD) {
 			sendKick("Expecting Encrypt Key Request packet", client);
-			throw new IOException("Expecting Encrypt Key Request packet, got " + id);
+			return false;
 		}
 		
 		P164EncryptionKeyRequest request = new P164EncryptionKeyRequest(server.getPacket());
 		
 		byte[] secret = Crypt.getBytes(16);
 		
-		authSession(secret, client, request);
+		if (!authSession(secret, client, request)) {
+			return false;
+		}
 		
-		sendEncryptionKeyResponse(secret, client, server, request);
+		if (!sendEncryptionKeyResponse(secret, client, server, request)) {
+			return false;
+		}
 		
 		id = server.getPacketId();
 		if (id != 0xFC) {
 			sendKick("Expecting Encrypt Key Response packet", client);
-			throw new IOException("Expecting Encrypt Key Response packet, got " + id);
+			return false;
 		}
 		
 		P164EncryptionKeyResponse response = new P164EncryptionKeyResponse(server.getPacket());
 		if (response.getPubKey().length != 0 || response.getToken().length != 0) {
 			sendKick("Invalid Encrypt Key Response packet", client);
-			throw new IOException("Invalid Encrypt Key Response packet, got " + id);
+			return false;
 		}
 		
 		enableEncryption(server, client, secret);
@@ -93,10 +103,16 @@ public class P164Protocol extends Protocol {
 		P164ClientStatus status = new P164ClientStatus((byte) 0);
 		server.writePacket(status);
 		
-		System.out.println("Packet id " + server.getPacketId());
+		id = server.getPacketId();
+		if (id != 0x01) {
+			sendKick("Didn't receive login packet", client);
+			return false;
+		}
 		
-		sendKick("Unable to login", client);
+		P164LoginRequest login = new P164LoginRequest(server.getPacket());
+		client.writePacket(login);	
 		
+		return true;
 	}
 	
 	@Override
@@ -118,16 +134,18 @@ public class P164Protocol extends Protocol {
 		server.setWrappedChannel(new CryptByteChannelWrapper(server.getRawChannel(), out, in));
 	}
 	
-	private void authSession(byte[] secret, PacketChannel client, P164EncryptionKeyRequest request) throws IOException {
+	private boolean authSession(byte[] secret, PacketChannel client, P164EncryptionKeyRequest request) throws IOException {
 		String hash = SHA1Hash(new Object[] {request.getServerId(), secret, request.getPubKey()});
 		
 		if (!AuthManager.authServer(hash)) {
 			sendKick("Unable to connect to auth server", client);
-			throw new IOException("Unable to connect to auth server");
+			return false;
 		}
+		
+		return true;
 	}
 	
-	private void sendEncryptionKeyResponse(byte[] secret, PacketChannel client, PacketChannel server, P164EncryptionKeyRequest request) throws IOException {
+	private boolean sendEncryptionKeyResponse(byte[] secret, PacketChannel client, PacketChannel server, P164EncryptionKeyRequest request) throws IOException {
 		AsymmetricBlockCipher rsa = new PKCS1Encoding(new RSAEngine());
 		
 		AsymmetricKeyParameter publicKey = PublicKeyFactory.createKey(request.getPubKey());
@@ -141,17 +159,18 @@ public class P164Protocol extends Protocol {
 			encryptedSecret = rsa.processBlock(secret, 0, secret.length);
 		} catch (InvalidCipherTextException e) {
 			sendKick("Unable to encrypt shared secret " + e.getMessage(), client);
-			throw new IOException(e);
+			return false;
 		}
 		
 		try {
 			encryptedToken = rsa.processBlock(request.getToken(), 0, request.getToken().length);
 		} catch (InvalidCipherTextException e) {
 			sendKick("Unable to encrypt token " + e.getMessage(), client);
-			throw new IOException(e);
+			return false;
 		}
 		
 		server.writePacket(new P164EncryptionKeyResponse(encryptedSecret, encryptedToken));
+		return true;
 	}
 	
 	private static String SHA1Hash(Object[] input) {
