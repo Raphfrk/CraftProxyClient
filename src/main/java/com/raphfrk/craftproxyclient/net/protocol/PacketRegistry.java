@@ -128,13 +128,5 @@ public class PacketRegistry {
 	public Packet getPacket(int id, Object[] values, ByteBuffer buf, int offset, int length) {
 		return new Packet(id, values, buf, offset, length);
 	}
-	
-	public void sendKick(String message, PacketChannel client) throws IOException {
-		throw new IllegalStateException("Base class cannot send kick message");
-	}
-	
-	public void handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
-		throw new IllegalStateException("Base class cannot handle login");
-	}
 
 }

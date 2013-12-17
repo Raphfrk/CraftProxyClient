@@ -23,12 +23,27 @@
  */
 package com.raphfrk.craftproxyclient.net.protocol;
 
-import java.nio.channels.SocketChannel;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
-public interface Protocol {
-
-	public ClientInfo acceptClient(SocketChannel client);
+public class Protocol {
 	
-	public PacketRegistry getPacketRegistry();
+	private final PacketRegistry registry;
+	
+	protected Protocol(PacketRegistry registry) {
+		this.registry = registry;
+	}
+
+	public PacketRegistry getPacketRegistry() {
+		return registry;
+	}
+	
+	public void sendKick(String message, PacketChannel client) throws IOException {
+		throw new IllegalStateException("Base Protocol class cannot send kick");
+	}
+	
+	public void handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
+		throw new IllegalStateException("Base Protocol class cannot handle login");
+	}
 	
 }

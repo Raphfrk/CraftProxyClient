@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
-import com.raphfrk.craftproxyclient.net.protocol.PacketRegistry;
-import com.raphfrk.craftproxyclient.net.protocol.p164bootstrap.P164BootstrapPacketRegistry;
+import com.raphfrk.craftproxyclient.net.protocol.Protocol;
+import com.raphfrk.craftproxyclient.net.protocol.p164bootstrap.P164BootstrapProtocol;
 
 public class ConnectionListener extends Thread {
 	
@@ -43,7 +43,7 @@ public class ConnectionListener extends Thread {
 	private final ServerSocketChannel socket;
 	private final InetSocketAddress serverAddr;
 	
-	private final P164BootstrapPacketRegistry p164Bootstrap = new P164BootstrapPacketRegistry();
+	private final P164BootstrapProtocol p164Bootstrap = new P164BootstrapProtocol();
 	
 	public ConnectionListener(int port, String serverHostname, int serverPort) throws IOException {
 		serverAddr = new InetSocketAddress(serverHostname, serverPort);
@@ -65,22 +65,22 @@ public class ConnectionListener extends Thread {
 				PacketChannel clientPacketChannel = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 				try {
 					int id = clientPacketChannel.getPacketId();
-					PacketRegistry registry = null;
+					Protocol protocol = null;
 					Handshake handshake = null;
 
 					if (id == 2) {
 						// 1.64 protocol
-						clientPacketChannel.setRegistry(p164Bootstrap);
+						clientPacketChannel.setRegistry(p164Bootstrap.getPacketRegistry());
 						handshake = p164Bootstrap.getHandshake(clientPacketChannel.getPacket());
-						registry = p164Bootstrap.getRegistry(handshake);
-						if (registry == null) {
+						protocol = p164Bootstrap.getProtocol(handshake);
+						if (protocol == null) {
 							continue;
 						}
-						clientPacketChannel.setRegistry(registry);
+						clientPacketChannel.setRegistry(protocol.getPacketRegistry());
 					}
 					
 					
-					if (registry == null) {
+					if (protocol == null) {
 						continue;
 					}
 					
@@ -89,9 +89,8 @@ public class ConnectionListener extends Thread {
 					
 					try {
 						PacketChannel serverPacketChannel = new PacketChannel(server, BUFFER_SIZE, WRITE_BUFFER_SIZE);
-						serverPacketChannel.setRegistry(registry);
-						registry.handleLogin(handshake, clientPacketChannel, serverPacketChannel, serverAddr);
-												
+						serverPacketChannel.setRegistry(protocol.getPacketRegistry());
+						protocol.handleLogin(handshake, clientPacketChannel, serverPacketChannel, serverAddr);						
 					} finally {
 						server.close();
 					}
