@@ -25,27 +25,19 @@ package com.raphfrk.craftproxyclient.net.protocol.p164;
 
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 
-public class P164EncryptionKeyRequest extends Packet {
+public class P164ClientStatus extends Packet {
 	
-	public P164EncryptionKeyRequest(Packet p) {
+	public P164ClientStatus(Packet p) {
 		super(p);
 	}
 	
-	public P164EncryptionKeyRequest(String serverId, byte[] pubKey, byte[] token) {
-		super(0xFD, new Object[] {(byte) 0xFD, serverId, pubKey, token});
+	public P164ClientStatus(byte status) {
+		super(0xCD, new Object[] {(byte) 0xCD, (byte) status});
 	}
 	
 	
-	public String getServerId() {
-		return (String) getField(1);
-	}
-	
-	public byte[] getPubKey() {
-		return (byte[]) getField(2);
-	}
-	
-	public byte[] getToken() {
-		return (byte[]) getField(3);
+	public Byte getStatus() {
+		return (Byte) getField(1);
 	}
 
 }

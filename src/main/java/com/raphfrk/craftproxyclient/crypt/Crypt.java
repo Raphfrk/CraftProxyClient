@@ -154,6 +154,12 @@ public class Crypt {
 		}
 	}
 	
+	public static byte[] getBytes(int len) {
+		byte[] arr = new byte[16];
+		getBytes(arr);
+		return arr;
+	}
+	
 	public static void getBytes(byte[] arr) {
 		SecureRandom r = getSecureRandom();
 		try {

@@ -31,9 +31,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
@@ -47,7 +50,8 @@ import com.raphfrk.craftproxyclient.crypt.Crypt;
 
 public class AuthManager {
 	
-	private final static String authServer = " https://authserver.mojang.com";
+	private final static String authServer = "https://authserver.mojang.com";
+	private final static String sessionServer = "http://session.minecraft.net/game/joinserver.jsp?";
 	private final static String tokenFilename = "access-token.1.64.json";
 
 	private static JSONObject loginDetails;
@@ -137,7 +141,9 @@ public class AuthManager {
 		try {
 			HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
 			con.setDoOutput(true);
-			con.setInstanceFollowRedirects(false); 
+			con.setInstanceFollowRedirects(false);
+			con.setReadTimeout(5000);
+			con.setConnectTimeout(5000);
 			con.setRequestMethod("POST");
 			con.setRequestProperty("Content-Type", "application/json"); 
 			con.connect();
@@ -170,6 +176,54 @@ public class AuthManager {
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
+		}
+		
+	}
+	
+	public static boolean authServer(String hash) {
+		URL url;
+		try {
+			if (loginDetails == null) {
+				return false;
+			}
+			JSONObject profile = (JSONObject) loginDetails.get("selectedProfile");
+			
+			String username;
+			String accessToken;
+			try {
+				username = URLEncoder.encode((String) profile.get("name"), "UTF-8");
+				accessToken = URLEncoder.encode((String) loginDetails.get("accessToken"), "UTF-8");
+				hash = URLEncoder.encode(hash, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				return false;
+			}
+
+			String urlString = sessionServer + "user=" + username + "&sessionId=" + accessToken + "&serverId=" + hash;
+			url = new URL(urlString);
+		} catch (MalformedURLException e) {
+			return false;
+		}
+		try {
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setInstanceFollowRedirects(false); 
+			con.setReadTimeout(5000);
+			con.setConnectTimeout(5000);
+			con.connect();
+
+			if (con.getResponseCode() != 200) {
+				return false;
+			}
+
+			BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
+			try {
+				String reply = reader.readLine();
+				return "OK".equals(reply);
+			} finally {
+				reader.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
 		}
 		
 	}

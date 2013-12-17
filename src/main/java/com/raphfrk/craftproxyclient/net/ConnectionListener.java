@@ -62,21 +62,21 @@ public class ConnectionListener extends Thread {
 				break;
 			}
 			try {
-				PacketChannel clientPacketChannel = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+				PacketChannel client = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 				try {
-					int id = clientPacketChannel.getPacketId();
+					int id = client.getPacketId();
 					Protocol protocol = null;
 					Handshake handshake = null;
 
 					if (id == 2) {
 						// 1.64 protocol
-						clientPacketChannel.setRegistry(p164Bootstrap.getPacketRegistry());
-						handshake = p164Bootstrap.getHandshake(clientPacketChannel.getPacket());
+						client.setRegistry(p164Bootstrap.getPacketRegistry());
+						handshake = p164Bootstrap.getHandshake(client.getPacket());
 						protocol = p164Bootstrap.getProtocol(handshake);
 						if (protocol == null) {
 							continue;
 						}
-						clientPacketChannel.setRegistry(protocol.getPacketRegistry());
+						client.setRegistry(protocol.getPacketRegistry());
 					}
 					
 					
@@ -90,7 +90,10 @@ public class ConnectionListener extends Thread {
 					try {
 						PacketChannel serverPacketChannel = new PacketChannel(server, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 						serverPacketChannel.setRegistry(protocol.getPacketRegistry());
-						protocol.handleLogin(handshake, clientPacketChannel, serverPacketChannel, serverAddr);						
+						protocol.handleLogin(handshake, client, serverPacketChannel, serverAddr);						
+					} catch (Exception e) {
+						e.printStackTrace();
+						protocol.sendKick("Login error " + e.getMessage(), client);
 					} finally {
 						server.close();
 					}

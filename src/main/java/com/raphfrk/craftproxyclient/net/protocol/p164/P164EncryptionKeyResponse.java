@@ -31,7 +31,7 @@ public class P164EncryptionKeyResponse extends Packet {
 		super(p);
 	}
 	
-	public P164EncryptionKeyResponse(int id, byte[] secret, byte[] token) {
+	public P164EncryptionKeyResponse(byte[] secret, byte[] token) {
 		super(0xFC, new Object[] {(byte) 0xFC, secret, token});
 	}
 	

@@ -27,10 +27,15 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import com.raphfrk.craftproxyclient.crypt.Crypt;
+import com.raphfrk.craftproxyclient.net.auth.AuthManager;
+
 public class ConnectionListenerTest {
 	
 	@Test
 	public void listenTest() throws IOException, InterruptedException {
+		//Crypt.init();
+		//System.out.println(AuthManager.refreshAccessToken());
 		//ConnectionListener listener = new ConnectionListener(12345, "localhost", 25565);
 		//listener.join();
 	}
