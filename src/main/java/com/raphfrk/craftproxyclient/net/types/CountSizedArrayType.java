@@ -25,45 +25,56 @@ package com.raphfrk.craftproxyclient.net.types;
 
 import java.nio.ByteBuffer;
 
-public class ShortSizedByteArrayType extends Type<byte[]> {
+public class CountSizedArrayType extends Type<byte[]> {
+	
+	private final NumberType countType;
+	private final int elementLength;
+	
+	public CountSizedArrayType(NumberType countType, int elementLength) {
+		this.countType = countType;
+		this.elementLength = elementLength;
+	}
 
-	public boolean writeRaw(byte[] data, ByteBuffer buf) {
-		if (buf.remaining() >= data.length + 2) {
-			buf.putShort((short) data.length);
+	@Override
+	public byte[] get(ByteBuffer buf) {
+		int length = countType.getValue(buf);
+		byte[] data = new byte[length * elementLength];
+		buf.get(data);
+		return data;
+	}
+
+	@Override
+	public int getLength(ByteBuffer buf) {
+		int pos = buf.position();
+		try {
+			int countLength = countType.getLength(buf);
+			if (countLength == -1) {
+				return -1;
+			}
+			if (buf.remaining() < countLength) {
+				return -1;
+			}
+			int length = countType.getValue(buf);
+			int dataLength = length * elementLength;
+			if (buf.remaining() < dataLength) {
+				return -1;
+			}
+			return countLength + dataLength;
+		} finally {
+			buf.position(pos);
+		}
+	}
+
+	@Override
+	public boolean write(byte[] data, ByteBuffer buf) {
+		if (buf.remaining() >= getLength(buf)) {
+			int elements = data.length / elementLength;
+			countType.putValue(elements, buf);
 			buf.put(data);
 			return true;
 		} else {
 			return false;
 		}
-	}
-	
-	public static byte[] getRaw(ByteBuffer buf) {
-		byte[] arr = new byte[getLengthRaw(buf) - 2];
-		buf.getShort();
-		buf.get(arr);
-		return arr;
-	}
-	
-	public static int getLengthRaw(ByteBuffer buf) {
-		if (buf.remaining() < 2) {
-			return -1;
-		}
-		return 2 + (buf.getShort(buf.position()) & 0xFF);
-	}
-	
-	@Override
-	public byte[] get(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-
-	@Override
-	public int getLength(ByteBuffer buf) {
-		return getLengthRaw(buf);
-	}
-
-	@Override
-	public boolean write(byte[] data, ByteBuffer buf) {
-		return writeRaw(data, buf);
 	}
 
 }

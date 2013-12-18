@@ -25,51 +25,38 @@ package com.raphfrk.craftproxyclient.net.types;
 
 import java.nio.ByteBuffer;
 
-public class IntType extends FixedSizeType<Integer> implements NumberType {
-	
-	public IntType() {
-		super(4);
-	}
+public class BulkDataType extends Type<Object> {
 
-	public boolean writeRaw(int data, ByteBuffer buf) {
-		if (buf.remaining() >= getFixedSize()) {
-			putByte(data >> 24, buf);
-			putByte(data >> 16, buf);
-			putByte(data >> 8, buf);
-			putByte(data >> 0, buf);
-			return true;
-		} else {
-			return false;
+	public boolean writeRaw(Object data, ByteBuffer buf) {
+		throw new UnsupportedOperationException();
+	}
+	
+	public static Object getRaw(ByteBuffer buf) {
+		throw new UnsupportedOperationException();
+	}
+	
+	public static int getLengthRaw(ByteBuffer buf) {
+		if (buf.remaining() < 6) {
+			return -1;
 		}
-	}
-	
-	public static int getRaw(ByteBuffer buf) {
-		int x = 0;
-		x |= getByte(buf) << 24;
-		x |= getByte(buf) << 16;
-		x |= getByte(buf) << 8;
-		x |= getByte(buf) << 0;
-		return x;
+		short chunks = buf.getShort(buf.position());
+		int dataLength = buf.getInt(buf.position() + 2);
+		return 6 + chunks * 12 + dataLength + 1;
 	}
 	
 	@Override
-	public boolean write(Integer data, ByteBuffer buf) {
+	public Object get(ByteBuffer buf) {
+		return getRaw(buf);
+	}
+
+	@Override
+	public int getLength(ByteBuffer buf) {
+		return getLengthRaw(buf);
+	}
+
+	@Override
+	public boolean write(Object data, ByteBuffer buf) {
 		return writeRaw(data, buf);
-	}
-
-	@Override
-	public Integer get(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-
-	@Override
-	public int getValue(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-	
-	@Override
-	public boolean putValue(int value, ByteBuffer buf) {
-		return writeRaw(value, buf);
 	}
 
 }

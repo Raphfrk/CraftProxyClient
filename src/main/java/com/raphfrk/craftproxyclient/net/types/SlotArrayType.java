@@ -25,51 +25,53 @@ package com.raphfrk.craftproxyclient.net.types;
 
 import java.nio.ByteBuffer;
 
-public class IntType extends FixedSizeType<Integer> implements NumberType {
-	
-	public IntType() {
-		super(4);
-	}
+import com.raphfrk.craftproxyclient.net.types.values.Slot;
 
-	public boolean writeRaw(int data, ByteBuffer buf) {
-		if (buf.remaining() >= getFixedSize()) {
-			putByte(data >> 24, buf);
-			putByte(data >> 16, buf);
-			putByte(data >> 8, buf);
-			putByte(data >> 0, buf);
-			return true;
-		} else {
-			return false;
+public class SlotArrayType extends Type<Slot[]> {
+
+	public boolean writeRaw(Slot[] data, ByteBuffer buf) {
+		throw new UnsupportedOperationException();
+	}
+	
+	public static Slot[] getRaw(ByteBuffer buf) {
+		throw new UnsupportedOperationException();
+	}
+	
+	public static int getLengthRaw(ByteBuffer buf) {
+		if (buf.remaining() < 2) {
+			return -1;
+		}
+		int pos = buf.position();
+		try {
+			int count = buf.getShort();
+			int length = 2;
+			for (int i = 0; i < count; i++) {
+				int slotLength = SlotType.getLengthRaw(buf);
+				if (slotLength == -1) {
+					return -1;
+				}
+				buf.position(buf.position() + slotLength);
+				length += slotLength;
+			}
+			return length;
+		} finally {
+			buf.position(pos);
 		}
 	}
 	
-	public static int getRaw(ByteBuffer buf) {
-		int x = 0;
-		x |= getByte(buf) << 24;
-		x |= getByte(buf) << 16;
-		x |= getByte(buf) << 8;
-		x |= getByte(buf) << 0;
-		return x;
-	}
-	
 	@Override
-	public boolean write(Integer data, ByteBuffer buf) {
+	public Slot[] get(ByteBuffer buf) {
+		return getRaw(buf);
+	}
+
+	@Override
+	public int getLength(ByteBuffer buf) {
+		return getLengthRaw(buf);
+	}
+
+	@Override
+	public boolean write(Slot[] data, ByteBuffer buf) {
 		return writeRaw(data, buf);
-	}
-
-	@Override
-	public Integer get(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-
-	@Override
-	public int getValue(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-	
-	@Override
-	public boolean putValue(int value, ByteBuffer buf) {
-		return writeRaw(value, buf);
 	}
 
 }

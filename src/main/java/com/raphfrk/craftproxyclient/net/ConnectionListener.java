@@ -85,25 +85,38 @@ public class ConnectionListener extends Thread {
 						continue;
 					}
 					
-					SocketChannel server = SocketChannel.open();
-					server.connect(serverAddr);
+					SocketChannel s = SocketChannel.open();
+					s.connect(serverAddr);
 					
 					try {
-						PacketChannel serverPacketChannel = new PacketChannel(server, BUFFER_SIZE, WRITE_BUFFER_SIZE);
-						serverPacketChannel.setRegistry(protocol.getPacketRegistry());
-						protocol.handleLogin(handshake, client, serverPacketChannel, serverAddr);						
+						PacketChannel server = new PacketChannel(s, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+						server.setRegistry(protocol.getPacketRegistry());
+						protocol.handleLogin(handshake, client, server, serverAddr);
+						
+						TransferConnection serverToClient = new TransferConnection(server, client);
+						TransferConnection clientToServer = new TransferConnection(client, server, serverToClient);
+						
+						serverToClient.start();
+						clientToServer.start();
+						
+						try {
+							serverToClient.join();
+							clientToServer.join();
+						} catch (InterruptedException e) {
+							throw new IllegalStateException("ConnectionListen thread should not be interrupted");
+						}
 					} catch (Exception e) {
 						e.printStackTrace();
 						protocol.sendKick("Login error " + e.getMessage(), client);
 					} finally {
-						server.close();
+						s.close();
 					}
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			} finally {
 				try {
-					if (protocol != null && client != null) {
+					if (protocol != null && client != null && client.getRawChannel().isOpen()) {
 						protocol.sendKick("Closing connection", client);
 					}
 					c.close();

@@ -21,32 +21,57 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.protocol.p164;
+package com.raphfrk.craftproxyclient.net.types.values;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
-
-import javax.net.ssl.HttpsURLConnection;
-
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
-import com.raphfrk.craftproxyclient.crypt.Crypt;
-
-
-public class P164AuthThread {
+public class Slot {
 	
+	private final short id;
+	private final byte count;
+	private final short damage;
+	private final byte[] nbt;
+	
+	public Slot() {
+		this((short) -1, (byte) 0, (short) 0);
+	}
+	
+	public Slot(short id, byte count, short damage) {
+		this(id, count, damage, new byte[0]);
+	}
+	
+	public Slot(short id, byte count, short damage, byte[] nbt) {
+		this.id = id;
+		this.count = count;
+		this.damage = damage;
+		this.nbt = new byte[nbt.length];
+		System.arraycopy(nbt, 0, this.nbt, 0, nbt.length);
+	}
+	
+	public Slot(Slot slot) {
+		this(slot.id, slot.count, slot.damage, slot.nbt);
+	}
+	
+	public int length() {
+		if (id == -1) {
+			return 2;
+		} else {
+			return 7 + nbt.length;
+		}
+	}
+	
+	public short getId() {
+		return id;
+	}
+	
+	public byte getCount() {
+		return count;
+	}
+	
+	public short getDamage() {
+		return damage;
+	}
+	
+	public byte[] getNBT() {
+		return nbt;
+	}
 
 }

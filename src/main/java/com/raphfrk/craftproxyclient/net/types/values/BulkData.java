@@ -21,55 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.types;
+package com.raphfrk.craftproxyclient.net.types.values;
 
-import java.nio.ByteBuffer;
+import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
+import org.bouncycastle.util.Arrays;
 
-public class IntType extends FixedSizeType<Integer> implements NumberType {
+public class BulkData {
 	
-	public IntType() {
-		super(4);
+	private final byte[] chunkData;
+	private final int[] chunkX;
+	private final int[] chunkZ;
+	private final short[] bitmap;
+	private final short[] add;
+	
+	public BulkData(byte[] chunkData, int[] chunkX, int[] chunkZ, short[] bitmap, short[] add) {
+		this.chunkData = ByteUtils.clone(chunkData);
+		this.chunkX = Arrays.copyOf(chunkX, chunkX.length);
+		this.chunkZ = Arrays.copyOf(chunkZ, chunkZ.length);
+		this.bitmap = new short[bitmap.length];
+		System.arraycopy(bitmap, 0, this.bitmap, 0, bitmap.length);
+		this.add = new short[add.length];
+		System.arraycopy(bitmap, 0, this.add, 0, add.length);
 	}
 
-	public boolean writeRaw(int data, ByteBuffer buf) {
-		if (buf.remaining() >= getFixedSize()) {
-			putByte(data >> 24, buf);
-			putByte(data >> 16, buf);
-			putByte(data >> 8, buf);
-			putByte(data >> 0, buf);
-			return true;
-		} else {
-			return false;
-		}
-	}
-	
-	public static int getRaw(ByteBuffer buf) {
-		int x = 0;
-		x |= getByte(buf) << 24;
-		x |= getByte(buf) << 16;
-		x |= getByte(buf) << 8;
-		x |= getByte(buf) << 0;
-		return x;
+	public byte[] getChunkData() {
+		return chunkData;
 	}
 	
-	@Override
-	public boolean write(Integer data, ByteBuffer buf) {
-		return writeRaw(data, buf);
-	}
-
-	@Override
-	public Integer get(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-
-	@Override
-	public int getValue(ByteBuffer buf) {
-		return getRaw(buf);
+	public int getChunkX(int i) {
+		return chunkX[i];
 	}
 	
-	@Override
-	public boolean putValue(int value, ByteBuffer buf) {
-		return writeRaw(value, buf);
+	public int getChunkZ(int i) {
+		return chunkZ[i];
 	}
-
+	
+	public short getBitmap(int i) {
+		return bitmap[i];
+	}
+	
+	public short getAdd(int i) {
+		return add[i];
+	}
 }

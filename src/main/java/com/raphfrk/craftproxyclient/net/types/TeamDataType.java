@@ -25,51 +25,74 @@ package com.raphfrk.craftproxyclient.net.types;
 
 import java.nio.ByteBuffer;
 
-public class IntType extends FixedSizeType<Integer> implements NumberType {
-	
-	public IntType() {
-		super(4);
-	}
+public class TeamDataType extends Type<Object> {
 
-	public boolean writeRaw(int data, ByteBuffer buf) {
-		if (buf.remaining() >= getFixedSize()) {
-			putByte(data >> 24, buf);
-			putByte(data >> 16, buf);
-			putByte(data >> 8, buf);
-			putByte(data >> 0, buf);
-			return true;
-		} else {
-			return false;
+	public boolean writeRaw(Object data, ByteBuffer buf) {
+		throw new UnsupportedOperationException();
+	}
+	
+	public static Object getRaw(ByteBuffer buf) {
+		throw new UnsupportedOperationException();
+	}
+	
+	public static int getLengthRaw(ByteBuffer buf) {
+		if (buf.remaining() < 1) {
+			return -1;
+		}
+		int pos = buf.position();
+		try {
+			byte mode = buf.get();
+			int length = 1;
+			int l;
+			if (mode == 0 || mode == 2) {
+				for (int i = 0; i < 2; i++) {
+					l = String16Type.getLengthRaw(buf);
+					if (l == -1) {
+						return -1;
+					}
+					buf.position(buf.position() + l);
+					length += l;
+				}
+				if (buf.remaining() == 0) {
+					return -1;
+				}
+				buf.get();
+				length += 1;
+			}
+			if (mode == 0 || mode == 3 || mode == 4) {
+				if (buf.remaining() < 2) {
+					return -1;
+				}
+				short count = buf.getShort();
+				length += 2;
+				for (int i = 0; i < count; i++) {
+					l = String16Type.getLengthRaw(buf);
+					if (l == -1) {
+						return -1;
+					}
+					buf.position(buf.position() + l);
+					length += l;
+				}
+			}
+			return length;
+		} finally {
+			buf.position(pos);
 		}
 	}
-	
-	public static int getRaw(ByteBuffer buf) {
-		int x = 0;
-		x |= getByte(buf) << 24;
-		x |= getByte(buf) << 16;
-		x |= getByte(buf) << 8;
-		x |= getByte(buf) << 0;
-		return x;
-	}
-	
+
 	@Override
-	public boolean write(Integer data, ByteBuffer buf) {
+	public Object get(ByteBuffer buf) {
+		return getRaw(buf);
+	}
+
+	@Override
+	public int getLength(ByteBuffer buf) {
+		return getLengthRaw(buf);
+	}
+
+	@Override
+	public boolean write(Object data, ByteBuffer buf) {
 		return writeRaw(data, buf);
-	}
-
-	@Override
-	public Integer get(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-
-	@Override
-	public int getValue(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-	
-	@Override
-	public boolean putValue(int value, ByteBuffer buf) {
-		return writeRaw(value, buf);
 	}
 
 }

@@ -25,7 +25,7 @@ package com.raphfrk.craftproxyclient.net.types;
 
 import java.nio.ByteBuffer;
 
-public class LongType extends FixedSizeType<Long> {
+public class LongType extends FixedSizeType<Long> implements NumberType {
 	
 	public LongType() {
 		super(8);
@@ -68,6 +68,16 @@ public class LongType extends FixedSizeType<Long> {
 	@Override
 	public Long get(ByteBuffer buf) {
 		return getRaw(buf);
+	}
+
+	@Override
+	public int getValue(ByteBuffer buf) {
+		return (int) getRaw(buf);
+	}
+	
+	@Override
+	public boolean putValue(int value, ByteBuffer buf) {
+		return writeRaw(value, buf);
 	}
 
 }

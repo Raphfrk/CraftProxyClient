@@ -32,10 +32,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Random;
 
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
-import com.raphfrk.craftproxyclient.net.types.ByteSizedByteArrayType;
+import com.raphfrk.craftproxyclient.net.types.ByteType;
+import com.raphfrk.craftproxyclient.net.types.CountSizedArrayType;
 import com.raphfrk.craftproxyclient.net.types.IntType;
 import com.raphfrk.craftproxyclient.net.types.LongType;
 import com.raphfrk.craftproxyclient.net.types.ShortType;
@@ -47,7 +47,7 @@ public class PacketChannelTest {
 	public void transferTest() throws IOException {
 		
 		PacketRegistry registry = new PacketRegistry()
-			.register(0, new Type[] {new IntType(), new ByteSizedByteArrayType(), new ShortType(), new IntType()})
+			.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
 			.register(1, new Type[] {new LongType()})
 			.done();
 
@@ -80,7 +80,7 @@ public class PacketChannelTest {
 			while (true) {
 				int id = channel.getPacketId();
 				assertTrue("Unexpected packet id " + id, id == 0 || id == 1);
-				channel.TransferPacket(writable);
+				channel.transferPacket(writable);
 			}
 		} catch (EOFException e) {
 		}
@@ -104,7 +104,7 @@ public class PacketChannelTest {
 	public void discardTest() throws IOException {
 		
 		PacketRegistry registry = new PacketRegistry()
-			.register(0, new Type[] {new IntType(), new ByteSizedByteArrayType(), new ShortType(), new IntType()})
+			.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
 			.register(1, new Type[] {new LongType()})
 			.done();
 
@@ -138,7 +138,7 @@ public class PacketChannelTest {
 			while (true) {
 				int id = channel.getPacketId();
 				assertTrue("Unexpected packet id " + id, id == 0 || id == 1);
-				channel.TransferPacket(writable);
+				channel.transferPacket(writable);
 			}
 		} catch (EOFException e) {
 		}
@@ -156,7 +156,7 @@ public class PacketChannelTest {
 	public void skipTest() throws IOException {
 
 		PacketRegistry registry = new PacketRegistry()
-		.register(0, new Type[] {new IntType(), new ByteSizedByteArrayType(), new ShortType(), new IntType()})
+		.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
 		.register(1, new Type[] {new LongType()})
 		.done();
 
@@ -202,7 +202,7 @@ public class PacketChannelTest {
 	public void markTest() throws IOException {
 
 		PacketRegistry registry = new PacketRegistry()
-		.register(0, new Type[] {new IntType(), new ByteSizedByteArrayType(), new ShortType(), new IntType()})
+		.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
 		.register(1, new Type[] {new LongType()})
 		.done();
 
@@ -270,7 +270,7 @@ public class PacketChannelTest {
 	public void getPacketTest() throws IOException {
 
 		PacketRegistry registry = new PacketRegistry()
-		.register(0, new Type[] {new IntType(), new ByteSizedByteArrayType(), new ShortType(), new IntType()})
+		.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
 		.register(1, new Type[] {new LongType()})
 		.done();
 
@@ -324,7 +324,7 @@ public class PacketChannelTest {
 	public void writePacketTest() throws IOException {
 
 		PacketRegistry registry = new PacketRegistry()
-		.register(0, new Type[] {new IntType(), new ByteSizedByteArrayType(), new ShortType(), new IntType()})
+		.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
 		.register(1, new Type[] {new LongType()})
 		.done();
 

@@ -25,45 +25,12 @@ package com.raphfrk.craftproxyclient.net.types;
 
 import java.nio.ByteBuffer;
 
-public class ByteSizedByteArrayType extends Type<byte[]> {
-
-	public boolean writeRaw(byte[] data, ByteBuffer buf) {
-		if (buf.remaining() >= data.length + 1) {
-			buf.put((byte) data.length);
-			buf.put(data);
-			return true;
-		} else {
-			return false;
-		}
-	}
+public interface NumberType {
 	
-	public static byte[] getRaw(ByteBuffer buf) {
-		byte[] arr = new byte[getLengthRaw(buf) - 1];
-		buf.get();
-		buf.get(arr);
-		return arr;
-	}
-	
-	public static int getLengthRaw(ByteBuffer buf) {
-		if (buf.remaining() == 0) {
-			return -1;
-		}
-		return 1 + (buf.get(buf.position()) & 0xFF);
-	}
-	
-	@Override
-	public byte[] get(ByteBuffer buf) {
-		return getRaw(buf);
-	}
+	public int getValue(ByteBuffer buf);
 
-	@Override
-	public int getLength(ByteBuffer buf) {
-		return getLengthRaw(buf);
-	}
-
-	@Override
-	public boolean write(byte[] data, ByteBuffer buf) {
-		return writeRaw(data, buf);
-	}
+	public boolean putValue(int value, ByteBuffer buf);
+	
+	public int getLength(ByteBuffer buf);
 
 }

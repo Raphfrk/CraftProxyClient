@@ -27,6 +27,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 
 import com.raphfrk.craftproxyclient.net.SingleByteByteChannelWrapper;
@@ -151,12 +152,32 @@ public class PacketChannel {
 	}
 	
 	/**
+	 * Shutsdown the output channel
+	 * 
+	 * @throws IOException
+	 */
+	public void shutdown() throws IOException {
+		((SocketChannel) channel).shutdownOutput();
+		channel.close();
+	}
+	
+	/**
 	 * Transfers the next packet to a channel
 	 * 
 	 * @param channel the destination channel
 	 * @throws IOException
 	 */
-	public void TransferPacket(WritableByteChannel channel) throws IOException {
+	public void transferPacket(PacketChannel channel) throws IOException {
+		transferPacket(channel.channel);
+	}
+	
+	/**
+	 * Transfers the next packet to a channel
+	 * 
+	 * @param channel the destination channel
+	 * @throws IOException
+	 */
+	public void transferPacket(WritableByteChannel channel) throws IOException {
 		packetStart = buf.position();
 		getPacketId();
 		@SuppressWarnings("rawtypes")

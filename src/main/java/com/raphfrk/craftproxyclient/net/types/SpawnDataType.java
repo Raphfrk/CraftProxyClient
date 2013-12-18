@@ -25,51 +25,58 @@ package com.raphfrk.craftproxyclient.net.types;
 
 import java.nio.ByteBuffer;
 
-public class IntType extends FixedSizeType<Integer> implements NumberType {
-	
-	public IntType() {
-		super(4);
-	}
+public class SpawnDataType extends Type<int[]> {
 
-	public boolean writeRaw(int data, ByteBuffer buf) {
-		if (buf.remaining() >= getFixedSize()) {
-			putByte(data >> 24, buf);
-			putByte(data >> 16, buf);
-			putByte(data >> 8, buf);
-			putByte(data >> 0, buf);
+	public boolean writeRaw(int[] data, ByteBuffer buf) {
+		if (buf.remaining() >= getLengthRaw(buf)) {
+			buf.putInt(data[0]);
+			if (data[0] != 0) {
+				for (int i = 1; i < 4; i++) {
+					buf.putShort((short) data[i]);
+				}
+			}
 			return true;
 		} else {
 			return false;
 		}
 	}
 	
-	public static int getRaw(ByteBuffer buf) {
-		int x = 0;
-		x |= getByte(buf) << 24;
-		x |= getByte(buf) << 16;
-		x |= getByte(buf) << 8;
-		x |= getByte(buf) << 0;
-		return x;
+	public static int[] getRaw(ByteBuffer buf) {
+		int[] arr = new int[4];
+		arr[0] = buf.getInt();
+		if (arr[0] == 0) {
+			for (int i = 1; i < 4; i++) {
+				arr[i] = buf.getShort();
+			}
+		}
+		return arr;
+	}
+	
+	public static int getLengthRaw(ByteBuffer buf) {
+		if (buf.remaining() < 4) {
+			return -1;
+		}
+		int id = buf.getInt(buf.position());
+		if (id == 0) {
+			return 4;
+		} else {
+			return 10;
+		}
 	}
 	
 	@Override
-	public boolean write(Integer data, ByteBuffer buf) {
+	public int[] get(ByteBuffer buf) {
+		return getRaw(buf);
+	}
+
+	@Override
+	public int getLength(ByteBuffer buf) {
+		return getLengthRaw(buf);
+	}
+
+	@Override
+	public boolean write(int[] data, ByteBuffer buf) {
 		return writeRaw(data, buf);
-	}
-
-	@Override
-	public Integer get(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-
-	@Override
-	public int getValue(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-	
-	@Override
-	public boolean putValue(int value, ByteBuffer buf) {
-		return writeRaw(value, buf);
 	}
 
 }

@@ -23,29 +23,54 @@
  */
 package com.raphfrk.craftproxyclient.net.protocol;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-import com.raphfrk.craftproxyclient.net.types.ByteSizedByteArrayType;
+import com.raphfrk.craftproxyclient.net.types.BulkDataType;
 import com.raphfrk.craftproxyclient.net.types.ByteType;
+import com.raphfrk.craftproxyclient.net.types.CountSizedArrayType;
 import com.raphfrk.craftproxyclient.net.types.FixedSizeType;
 import com.raphfrk.craftproxyclient.net.types.IntType;
 import com.raphfrk.craftproxyclient.net.types.LongType;
-import com.raphfrk.craftproxyclient.net.types.ShortSizedByteArrayType;
+import com.raphfrk.craftproxyclient.net.types.MetaType;
+import com.raphfrk.craftproxyclient.net.types.PropertyArrayType;
 import com.raphfrk.craftproxyclient.net.types.ShortType;
+import com.raphfrk.craftproxyclient.net.types.SlotArrayType;
+import com.raphfrk.craftproxyclient.net.types.SlotType;
+import com.raphfrk.craftproxyclient.net.types.SpawnDataType;
+import com.raphfrk.craftproxyclient.net.types.TeamDataType;
 import com.raphfrk.craftproxyclient.net.types.Type;
+import com.raphfrk.craftproxyclient.net.types.values.Slot;
 
 public class PacketRegistry {
 	
-	protected Type<Byte> tByte = new ByteType();
-	protected Type<Integer> tInt = new IntType();
-	protected Type<Short> tShort = new ShortType();
-	protected Type<Long> tLong = new LongType();
+	protected ByteType tByte = new ByteType();
+	protected IntType tInt = new IntType();
+	protected ShortType tShort = new ShortType();
+	protected LongType tLong = new LongType();
 	
-	protected Type<byte[]> tByteByteArray = new ByteSizedByteArrayType();
-	protected Type<byte[]> tShortByteArray = new ShortSizedByteArrayType();
+	// Placeholders - packets with these types don't need to be parsed
+	protected Type<Byte> tBoolean = new ByteType();
+	protected Type<Integer> tFloat = new IntType();
+	protected Type<Long> tDouble = new LongType();
+	
+	protected Type<byte[]> tByteByteArray = new CountSizedArrayType(tByte, 1);
+	protected Type<byte[]> tShortByteArray = new CountSizedArrayType(tShort, 1);
+	protected Type<byte[]> tIntByteArray = new CountSizedArrayType(tInt, 1);
+	
+	protected Type<byte[]> tByteIntArray = new CountSizedArrayType(tByte, 4);
+	
+	protected Type<byte[]> tIntTripleByteArray = new CountSizedArrayType(tInt, 3);
+	
+	protected final static BulkDataType tBulk = new BulkDataType();
+	
+	protected Type<Slot> tSlot = new SlotType();
+	protected SlotArrayType tSlotArray = new SlotArrayType();
+	protected Type<Object[][]> tMeta = new MetaType();
+	protected Type<int[]> tSpawnData = new SpawnDataType();
+	protected TeamDataType tTeam = new TeamDataType();
+	
+	protected Type<Object> tPropertyArray = new PropertyArrayType();
 	
 	@SuppressWarnings("rawtypes")
 	private final Type[][] packetInfo = new Type[256][];
@@ -56,7 +81,7 @@ public class PacketRegistry {
 	private boolean setupComplete = false;
 	
 	@SuppressWarnings("rawtypes")
-	protected PacketRegistry register(int id, Type[] types) {
+	protected PacketRegistry register(int id, Type ... types) {
 		if (setupComplete) {
 			throw new IllegalStateException("New packets may not be added after register setup is complete");
 		}

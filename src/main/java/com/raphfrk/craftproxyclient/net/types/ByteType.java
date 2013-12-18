@@ -25,7 +25,7 @@ package com.raphfrk.craftproxyclient.net.types;
 
 import java.nio.ByteBuffer;
 
-public class ByteType extends FixedSizeType<Byte> {
+public class ByteType extends FixedSizeType<Byte> implements NumberType {
 
 	public ByteType() {
 		super(1);
@@ -54,4 +54,14 @@ public class ByteType extends FixedSizeType<Byte> {
 		return getRaw(buf);
 	}
 
+	@Override
+	public int getValue(ByteBuffer buf) {
+		return getRaw(buf);
+	}
+
+	@Override
+	public boolean putValue(int value, ByteBuffer buf) {
+		return writeRaw((byte) value, buf);
+	}
+	
 }

@@ -25,7 +25,7 @@ package com.raphfrk.craftproxyclient.net.types;
 
 import java.nio.ByteBuffer;
 
-public class ShortType extends FixedSizeType<Short> {
+public class ShortType extends FixedSizeType<Short> implements NumberType {
 	
 	public ShortType() {
 		super(2);
@@ -58,4 +58,14 @@ public class ShortType extends FixedSizeType<Short> {
 		return getRaw(buf);
 	}
 
+	@Override
+	public int getValue(ByteBuffer buf) {
+		return getRaw(buf);
+	}
+
+	@Override
+	public boolean putValue(int value, ByteBuffer buf) {
+		return writeRaw((short) value, buf);
+	}
+	
 }
