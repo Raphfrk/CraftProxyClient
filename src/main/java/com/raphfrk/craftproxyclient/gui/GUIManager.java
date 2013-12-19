@@ -23,20 +23,18 @@
  */
 package com.raphfrk.craftproxyclient.gui;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 import org.json.simple.JSONObject;
 
+import com.raphfrk.craftproxyclient.CraftProxyClient;
 import com.raphfrk.craftproxyclient.net.auth.AuthManager;
 
 public class GUIManager {
 	
 	public static void messageBox(String message) {
-		JOptionPane.showMessageDialog(null, message);
+		JOptionPane.showMessageDialog(CraftProxyClient.getGUI(), message);
 	}
 	
 	public static JSONObject getLoginDetails() {
@@ -50,44 +48,39 @@ public class GUIManager {
 		}
 		return getNewLoginDetails();
 	}
-	
+
 	public static JSONObject getPreviousLoginDetails() {
 		JSONObject loginInfo = AuthManager.refreshAccessToken();
 		if (loginInfo == null) {
 			return null;
 		}
-		BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
-		try {
-			System.out.println("Do you want to reuse info " + loginInfo);
-			String reply = input.readLine();
-			if (reply.startsWith("y") || reply.startsWith("Y")) {
-				return loginInfo;
-			} else {
-				return null;
-			}
-		} catch (IOException e) {
+		int option = JOptionPane.showConfirmDialog(CraftProxyClient.getGUI(), "Login as " + AuthManager.getUsername() + "?", "Login", JOptionPane.YES_NO_OPTION);
+		if (option == 0) {
+			return loginInfo;
+		} else {
 			return null;
 		}
 	}
 
 	public static JSONObject getNewLoginDetails() {
-		BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
-		try {
-			JSONObject loginDetails = null;
-			do {
-				System.out.println("Please enter email address");
-				String email = input.readLine();
-				System.out.println("Please enter password");
-				String password = input.readLine();
-				loginDetails = AuthManager.authAccessToken(email, password);
-				if (loginDetails == null) {
-					System.out.println("Invalid login details");
+		JSONObject loginDetails = null;
+		do {
+			final LoginDialog login = new LoginDialog(CraftProxyClient.getGUI());
+			login.setVisible(true);
+			System.out.println("Thread " + Thread.currentThread());
+			loginDetails = AuthManager.authAccessToken(login.getEmail(), login.getPassword());
+			if (loginDetails == null) {
+				System.out.println("Invalid login details");
+			}
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					login.dispose();
 				}
-			} while (loginDetails == null);
-			return loginDetails;
-		} catch (IOException e) {
-			return null;
-		}
+			});
+			break;
+		} while (loginDetails == null);
+		
+		return loginDetails;
 	}
 
 }

@@ -1,0 +1,4 @@
+cache_size=48
+connect_hostname=localhost
+listen_port=25565
+connect_port=20000

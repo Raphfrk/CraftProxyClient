@@ -23,14 +23,29 @@
  */
 package com.raphfrk.craftproxyclient;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.Iterator;
+import java.util.Set;
+
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+
 import org.json.simple.JSONObject;
 
 import com.raphfrk.craftproxyclient.crypt.Crypt;
+import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.gui.GUIManager;
 
 public class CraftProxyClient {
-
-	public static void main(String[] args) {
+	
+	private static CraftProxyClient instance;
+	private final CraftProxyGUI gui;
+	
+	private CraftProxyClient() {
+		gui = new CraftProxyGUI();
+	}
+	
+	private void init() {
 		
 		if (!Crypt.init()) {
 			GUIManager.messageBox("Unable to load Bouncy Castle crypt provider");
@@ -40,12 +55,46 @@ public class CraftProxyClient {
 		JSONObject loginDetails = GUIManager.getLoginDetails();
 		
 		if (loginDetails == null) {
-			GUIManager.messageBox("Unknown login details");
+			JOptionPane.showMessageDialog(null, "Login failed");
+			closeGUI();
 			return;
+		} else {
+			JOptionPane.showMessageDialog(null, "Login success");
 		}
 		
-		System.out.println("Login details " + loginDetails);
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {
+				@Override
+				public void run() {
+					gui.setVisible(true);
+				}
+			});
+		} catch (InvocationTargetException | InterruptedException e) {
+			e.printStackTrace();
+		}
 		
 	}
+	
+	private void closeGUI() {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				getGUI().dispose();
+			}
+		});
+	}
+
+	public static void main(String[] args) {
+		instance = new CraftProxyClient();
+		instance.init();
+	}
+
+	public static CraftProxyClient getInstance() {
+		return instance;
+	}
+	
+	public static CraftProxyGUI getGUI() {
+		return getInstance().gui;
+	}
+
 	
 }
