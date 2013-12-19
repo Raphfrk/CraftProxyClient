@@ -45,6 +45,7 @@ import com.raphfrk.craftproxyclient.crypt.Crypt;
 import com.raphfrk.craftproxyclient.net.CryptByteChannelWrapper;
 import com.raphfrk.craftproxyclient.net.auth.AuthManager;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
+import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
 
@@ -117,7 +118,17 @@ public class P164Protocol extends Protocol {
 	
 	@Override
 	public void sendKick(String message, PacketChannel client) throws IOException {
-		client.writePacket(new P164Kick(message));
+		client.writePacket(getKick(message));
+	}
+	
+	@Override
+	public Packet getKick(String message) {
+		return new P164Kick(message);
+	}
+	
+	@Override
+	public String getName() {
+		return "1.64 (78)";
 	}
 	
 	private void enableEncryption(PacketChannel server, PacketChannel client, byte[] secret) {

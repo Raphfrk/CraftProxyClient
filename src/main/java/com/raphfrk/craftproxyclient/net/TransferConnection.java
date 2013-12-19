@@ -23,7 +23,6 @@
  */
 package com.raphfrk.craftproxyclient.net;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -32,24 +31,21 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
+import com.raphfrk.craftproxyclient.net.protocol.Protocol;
 
 public class TransferConnection extends Thread {
 	
 	private final PacketChannel in;
 	private final PacketChannel out;
+	private final Protocol protocol;
 	private final ReentrantLock outLock = new ReentrantLock();
 	private final ConcurrentLinkedQueue<Packet> sendQueue = new ConcurrentLinkedQueue<Packet>();
-	private TransferConnection other;
 	private AtomicBoolean running = new AtomicBoolean(true);
 	
-	public TransferConnection(PacketChannel in, PacketChannel out) {
-		this(in, out, null);
-	}
-	
-	public TransferConnection(PacketChannel in, PacketChannel out, TransferConnection other) {
+	public TransferConnection(Protocol protocol, PacketChannel in, PacketChannel out) {
+		this.protocol = protocol;
 		this.in = in;
 		this.out = out;
-		this.other = other;
 	}
 	
 	public void run() {
@@ -81,21 +77,8 @@ public class TransferConnection extends Thread {
 					break;
 				}
 			} catch (IOException e) {
-				if (!(e instanceof EOFException)) {
-					/*e.printStackTrace();
-					Iterator<Integer> i = ids.iterator();
-					StringBuilder sb = new StringBuilder("Ids : ");
-					while (i.hasNext()) {
-						sb.append(i.next() + ", " );
-					}
-					System.out.println("Ids " + sb.toString());
-					*/
-				}
 				break;
 			}
-		}
-		if (other != null) {
-			other.interrupt();
 		}
 	}
 	
@@ -105,8 +88,7 @@ public class TransferConnection extends Thread {
 			try {
 				flushPacketQueue();
 			} catch (IOException e) {
-				e.printStackTrace();
-				interrupt();
+				running.set(false);
 			} finally {
 				outLock.unlock();
 			}
@@ -116,8 +98,9 @@ public class TransferConnection extends Thread {
 	}
 	
 	public void interrupt() {
+		System.out.println("transfer connection interrupted");
+		queuePacket(protocol.getKick("Proxy server halted"));
 		running.set(false);
-		super.interrupt();
 	}
 	
 	private void flushPacketQueue() throws IOException {

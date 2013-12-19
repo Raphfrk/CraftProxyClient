@@ -29,6 +29,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
@@ -39,27 +40,31 @@ public class ConnectionListener extends Thread {
 	private final static int BUFFER_SIZE = 4 * 1024 * 1024;
 	private final static int WRITE_BUFFER_SIZE = 1024 * 1024;
 	
-	private final AtomicBoolean running = new AtomicBoolean();
 	private final ServerSocketChannel socket;
 	private final InetSocketAddress serverAddr;
+	private final InetSocketAddress localAddr;
+	private final CraftProxyGUI gui;
 	
 	private final P164BootstrapProtocol p164Bootstrap = new P164BootstrapProtocol();
 	
-	public ConnectionListener(int port, String serverHostname, int serverPort) throws IOException {
-		serverAddr = new InetSocketAddress(serverHostname, serverPort);
+	public ConnectionListener(CraftProxyGUI gui, int port, String serverHostname, int serverPort) throws IOException {
+		this.gui = gui;
+		this.serverAddr = new InetSocketAddress(serverHostname, serverPort);
+		this.localAddr = new InetSocketAddress(port);
 		this.socket = ServerSocketChannel.open();
-		this.socket.socket().bind(new InetSocketAddress(port));
-		start();
+		this.socket.socket().bind(localAddr);
 	}
 	
 	public void run() {
-		while (!interrupted()) {
+		TransferConnection serverToClient = null;
+		TransferConnection clientToServer = null;
+		try {
+			gui.setStatus("<html>Waiting for connection<br>localhost:" + localAddr.getPort() + "</html>");
 			SocketChannel c;
 			try {
 				c = socket.accept();
 			} catch (IOException e) {
-				close();
-				break;
+				return;
 			}
 			Protocol protocol = null;
 			PacketChannel client = null;
@@ -75,40 +80,48 @@ public class ConnectionListener extends Thread {
 						handshake = p164Bootstrap.getHandshake(client.getPacket());
 						protocol = p164Bootstrap.getProtocol(handshake);
 						if (protocol == null) {
-							continue;
+							return;
 						}
 						client.setRegistry(protocol.getPacketRegistry());
 					}
-					
-					
+
+
 					if (protocol == null) {
-						continue;
+						return;
 					}
 					
+					gui.setStatus("<html>Connection received, login started<br>Protocol: " + protocol.getName() + "</html>");
+
 					SocketChannel s = SocketChannel.open();
 					s.connect(serverAddr);
-					
+
+					PacketChannel server = null;
 					try {
-						PacketChannel server = new PacketChannel(s, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+						server = new PacketChannel(s, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 						server.setRegistry(protocol.getPacketRegistry());
 						protocol.handleLogin(handshake, client, server, serverAddr);
-						
-						TransferConnection serverToClient = new TransferConnection(server, client);
-						TransferConnection clientToServer = new TransferConnection(client, server, serverToClient);
-						
+					} catch (IOException e) {
+						if (server != null) {
+							protocol.sendKick("Connection closing " + e.getMessage(), client);
+							s.close();
+							return;
+						}
+					}
+					
+					gui.setStatus("<html>Login completed<br>Protocol: " + protocol.getName() + "</html>");
+
+					try {
+						serverToClient = new TransferConnection(protocol, server, client);
+						clientToServer = new TransferConnection(protocol, client, server);
+
 						serverToClient.start();
 						clientToServer.start();
-						
-						try {
-							serverToClient.join();
-							clientToServer.join();
-						} catch (InterruptedException e) {
-							throw new IllegalStateException("ConnectionListen thread should not be interrupted");
-						}
-					} catch (Exception e) {
-						e.printStackTrace();
-						protocol.sendKick("Login error " + e.getMessage(), client);
+
+						serverToClient.join();
+						clientToServer.join();
+					} catch (InterruptedException e) {
 					} finally {
+						serverToClient.queuePacket(protocol.getKick("Proxy halted"));
 						s.close();
 					}
 				} catch (IOException e) {
@@ -116,24 +129,30 @@ public class ConnectionListener extends Thread {
 				}
 			} finally {
 				try {
-					if (protocol != null && client != null && client.getRawChannel().isOpen()) {
-						protocol.sendKick("Closing connection", client);
-					}
 					c.close();
 				} catch (IOException e) {
 				}
 			}
-		}
-	}
-	
-	public void close() {
-		if (running.compareAndSet(true, false)) {
-			interrupt();
+		} finally {
+			while (serverToClient != null && serverToClient.isAlive()) {
+				try {
+					serverToClient.join();
+				} catch (InterruptedException e) {
+				}
+			}
+			while (clientToServer != null && clientToServer.isAlive()) {
+				try {
+					clientToServer.join();
+				} catch (InterruptedException e) {
+				}
+			}
 			try {
 				socket.close();
 			} catch (IOException e) {
 			}
+			gui.setDone();
 		}
-	}
 
+	}
+	
 }

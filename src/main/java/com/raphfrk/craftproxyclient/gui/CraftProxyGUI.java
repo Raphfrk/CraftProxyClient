@@ -42,34 +42,31 @@ import javax.swing.border.TitledBorder;
 import org.json.simple.JSONObject;
 
 import com.raphfrk.craftproxyclient.io.PropertiesFile;
+import com.raphfrk.craftproxyclient.net.ConnectionListener;
+import com.raphfrk.craftproxyclient.net.auth.AuthManager;
 
 public class CraftProxyGUI extends JFrame implements WindowListener, ActionListener {
+	
 	private static final long serialVersionUID = 1L;
 
-	JPanel topPanel = new JPanel();
-	JPanel secondPanel = new JPanel();
-	JPanel combinedTop = new JPanel();
-	JTextField serverName;
-	JTextField portNum;
-	JPanel filePanel;
-	JTextField currentSize;
-	JTextField desiredSize;
-	JLabel localServerName;
-	JTextField localServerPortnum;
-	JLabel info;
-	JButton connect;
+	private JPanel topPanel = new JPanel();
+	private JPanel secondPanel = new JPanel();
+	private JPanel combinedTop = new JPanel();
+	private JTextField serverName;
+	private JTextField portNum;
+	private JPanel filePanel;
+	private JTextField currentSize;
+	private JTextField desiredSize;
+	private JLabel localServerName;
+	private JTextField localServerPortnum;
+	private JLabel info;
+	private JButton connect;
 
-	final Object statusTextSync = new Object();
-	String statusText = "";
+	private String buttonText = "Start";
 
-	final Object buttonTextSync = new Object();
-	String buttonText = "Start";
-
-	Thread serverMainThread = null;
-
-	public JFrame main;
-
-	PropertiesFile pf;
+	private final PropertiesFile pf;
+	
+	private ConnectionListener connectionListener;
 
 	public CraftProxyGUI() {
 		
@@ -171,23 +168,32 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 			dispose();
 		} else {
 			this.setVisible(true);
+			info.setText("Logged in as " + AuthManager.getUsername());
 		}
 	}
 	
-
-	public void safeSetStatus(final String text) {
+	public void setDone() {
 		SwingUtilities.invokeLater(new Runnable() {
+			@Override
 			public void run() {
-				info.setText(text);
+				if (connect.getText().equals("Stop") || connect.getText().equals("Stopping")) {
+					connect.setText("Start");
+					desiredSize.setEditable(true);
+					serverName.setEditable(true);
+					portNum.setEditable(true);
+					info.setText("Server halted");
+					localServerPortnum.setEditable(true);
+				} else {
+					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Error: server stopped notice received when it shouldn't have been running", "Error", JOptionPane.ERROR_MESSAGE);
+				}
 			}
 		});
 	}
 
-	public void safeSetButton(final String text) {
+	public void setStatus(final String text) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				connect.setText(text);
-				connect.updateUI();
+				info.setText(text);
 			}
 		});
 	}
@@ -202,9 +208,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	}
 
 	public void windowClosing(WindowEvent paramWindowEvent) {
-		if(serverMainThread != null) {
-			serverMainThread.interrupt();
-		}
+		
 	}
 
 	public void windowOpened(WindowEvent paramWindowEvent) {
@@ -229,16 +233,30 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	public void actionPerformed(ActionEvent action) {
 		if(action.getSource().equals(connect)) {
 
-			int desired = 48;
-			try {			
+			if (action.getActionCommand().equals("Start")) {
 				pf.setString("connect_hostname", serverName.getText());
-				pf.setInt("connect_port", Integer.parseInt(portNum.getText()));
-				pf.setInt("listen_port", Integer.parseInt(localServerPortnum.getText()));
+				int connectPort;
+				try {
+					connectPort = Integer.parseInt(portNum.getText());
+				} catch (NumberFormatException nfe) {
+					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to parse server port number", "Error", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				pf.setInt("connect_port", connectPort);
+				int localPort;
+				try {
+					localPort = Integer.parseInt(localServerPortnum.getText());
+				} catch (NumberFormatException nfe) {
+					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to parse local port number", "Error", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				pf.setInt("listen_port", localPort);
+				int desired;
 				try {
 					desired = Integer.parseInt(desiredSize.getText());
 				} catch (NumberFormatException nfe) {
-					desired = 48;
-					desiredSize.setText("48");
+					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to desired cache size", "Error", JOptionPane.ERROR_MESSAGE);
+					return;
 				}
 				pf.setInt("cache_size", desired);
 				desiredSize.setEditable(false);
@@ -249,20 +267,22 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 					pf.save();
 				} catch (IOException e) {
 				}
-			} catch (NumberFormatException nfe) {
+				try {
+					connectionListener = new ConnectionListener(this, localPort, serverName.getText(), connectPort);
+				} catch (IOException e) {
+					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to start proxy server, " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				connectionListener.start();
+				connect.setText("Stop");
+				info.setText("Starting proxy server");
+			} else if (action.getActionCommand().equals("Stop")) {
+				connectionListener.interrupt();
+				connect.setText("Stopping");
+				info.setText("Halting proxy server");
+			} else if (action.getActionCommand().equals("Stopping")) {
+				JOptionPane.showMessageDialog(CraftProxyGUI.this, "Server halt is in progress", "Error", JOptionPane.ERROR_MESSAGE);
 			}
-
-			if(serverMainThread == null || !serverMainThread.isAlive()) {
-
-				safeSetButton("Stop");
-
-			} else {
-				safeSetButton("Stopping");
-				serverMainThread.interrupt();
-				desiredSize.setEditable(true);
-				serverName.setEditable(true);
-				portNum.setEditable(true);
-				localServerPortnum.setEditable(true);			}
 		}
 	}
 

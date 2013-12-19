@@ -38,8 +38,16 @@ public class Protocol {
 		return registry;
 	}
 	
+	public String getName() {
+		throw new IllegalStateException("Base Protocol class does not have a name");
+	}
+	
 	public void sendKick(String message, PacketChannel client) throws IOException {
 		throw new IllegalStateException("Base Protocol class cannot send kick");
+	}
+	
+	public Packet getKick(String message) {
+		throw new IllegalStateException("Base Protocol class cannot create kick");
 	}
 	
 	public boolean handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
