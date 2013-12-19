@@ -33,10 +33,13 @@ import java.io.IOException;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
+
+import org.json.simple.JSONObject;
 
 import com.raphfrk.craftproxyclient.io.PropertiesFile;
 
@@ -69,7 +72,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	PropertiesFile pf;
 
 	public CraftProxyGUI() {
-
+		
 		pf = new PropertiesFile("CraftProxyClientGUI.txt");
 
 		try {
@@ -157,8 +160,20 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
 		this.addWindowListener(this);
-
+		
 	}
+
+	public void init() {
+		JSONObject loginDetails = GUIManager.getLoginDetails();
+		
+		if (loginDetails == null) {
+			JOptionPane.showMessageDialog(null, "Login failed");
+			dispose();
+		} else {
+			this.setVisible(true);
+		}
+	}
+	
 
 	public void safeSetStatus(final String text) {
 		SwingUtilities.invokeLater(new Runnable() {

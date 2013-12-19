@@ -23,14 +23,7 @@
  */
 package com.raphfrk.craftproxyclient;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Iterator;
-import java.util.Set;
-
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
-
-import org.json.simple.JSONObject;
 
 import com.raphfrk.craftproxyclient.crypt.Crypt;
 import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
@@ -52,40 +45,17 @@ public class CraftProxyClient {
 			return;
 		}
 		
-		JSONObject loginDetails = GUIManager.getLoginDetails();
-		
-		if (loginDetails == null) {
-			JOptionPane.showMessageDialog(null, "Login failed");
-			closeGUI();
-			return;
-		} else {
-			JOptionPane.showMessageDialog(null, "Login success");
-		}
-		
-		try {
-			SwingUtilities.invokeAndWait(new Runnable() {
-				@Override
-				public void run() {
-					gui.setVisible(true);
-				}
-			});
-		} catch (InvocationTargetException | InterruptedException e) {
-			e.printStackTrace();
-		}
+		gui.init();
 		
 	}
 	
-	private void closeGUI() {
+	public static void main(String[] args) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				getGUI().dispose();
+				instance = new CraftProxyClient();
+				instance.init();	
 			}
 		});
-	}
-
-	public static void main(String[] args) {
-		instance = new CraftProxyClient();
-		instance.init();
 	}
 
 	public static CraftProxyClient getInstance() {
