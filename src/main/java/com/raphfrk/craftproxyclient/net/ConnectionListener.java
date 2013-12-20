@@ -65,7 +65,8 @@ public class ConnectionListener extends Thread {
 		try {
 			boolean ping = true;
 			while (ping) {
-				gui.setStatus("<html>Waiting for connection<br>localhost:" + localAddr.getPort() + "</html>");
+				String port = localAddr.getPort() != 25565 ? (":" + localAddr.getPort()) : "";
+				gui.setStatus("Waiting for connection, connect to localhost" + port);
 				SocketChannel c;
 				try {
 					c = socket.accept();
@@ -78,6 +79,7 @@ public class ConnectionListener extends Thread {
 					client = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 					try {
 						int id = client.getPacketId();
+
 						Handshake handshake = null;
 
 						if (id == 0xFE) {
@@ -87,6 +89,7 @@ public class ConnectionListener extends Thread {
 							}
 							client.setRegistry(p164Bootstrap.getPacketRegistry());
 							p164Bootstrap.handlePing(client);
+							gui.setStatus("Ping received");
 							continue;
 						}
 						ping = false;
@@ -106,7 +109,7 @@ public class ConnectionListener extends Thread {
 							return;
 						}
 
-						gui.setStatus("<html>Connection received, login started<br>Protocol: " + protocol.getName() + "</html>");
+						gui.setStatus("Connection received, login started", "Protocol: " + protocol.getName());
 
 						SocketChannel s = SocketChannel.open();
 						s.connect(serverAddr);
@@ -124,7 +127,7 @@ public class ConnectionListener extends Thread {
 							}
 						}
 
-						gui.setStatus("<html>Login completed<br>Protocol: " + protocol.getName() + "</html>");
+						gui.setStatus("Login completed", "Protocol: " + protocol.getName());
 
 						try {
 							serverToClient = new TransferConnection(protocol, server, client);

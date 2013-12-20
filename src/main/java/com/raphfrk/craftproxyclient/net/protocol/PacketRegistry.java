@@ -153,5 +153,12 @@ public class PacketRegistry {
 	public Packet getPacket(int id, Object[] values, ByteBuffer buf, int offset, int length) {
 		return new Packet(id, values, buf, offset, length);
 	}
+	
+	public int getPacketId(ByteBuffer buf) {
+		if (buf.remaining() == 0) {
+			return -1;
+		}
+		return  buf.get(buf.position()) & 0xFF;
+	}
 
 }

@@ -35,6 +35,8 @@ import com.raphfrk.craftproxyclient.net.types.Type;
 
 public class PacketChannel {
 	
+	private static final PacketRegistry emptyRegistry = new PacketRegistry();
+	
 	private final ByteChannel rawChannel;
 	private ByteChannel channel;
 	private final ByteBuffer buf;
@@ -63,7 +65,7 @@ public class PacketChannel {
 		this.channel = new SingleByteByteChannelWrapper(this.rawChannel);
 		this.buf = ByteBuffer.allocateDirect(readBufferSize);
 		this.writeBuf = ByteBuffer.allocateDirect(writeBufferSize);
-		this.registry = registry;
+		this.registry = registry == null ? emptyRegistry : registry;
 		this.setReading();
 	}
 	
@@ -238,12 +240,15 @@ public class PacketChannel {
 	 * @throws IOException
 	 */
 	public int getPacketId() throws IOException {
-		if (id == -1) {
-			if (buf.remaining() == 0) {
+		if (id != -1) {
+			return id;
+		}
+		do {
+			id = registry.getPacketId(buf);
+			if (id == -1) {
 				readBytesToBuffer(1);
 			}
-			id = buf.get(buf.position()) & 0xFF;
-		}
+		} while (id == -1);
 		return id;
 	}
 	

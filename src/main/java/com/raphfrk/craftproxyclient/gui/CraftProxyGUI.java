@@ -21,27 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-/*******************************************************************************
- * Copyright (C) 2012 Raphfrk
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is furnished to do
- * so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- ******************************************************************************/
 package com.raphfrk.craftproxyclient.gui;
 
 import java.awt.BorderLayout;
@@ -52,6 +31,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -72,18 +55,21 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	
 	private static final long serialVersionUID = 1L;
 
-	private JPanel topPanel = new JPanel();
-	private JPanel secondPanel = new JPanel();
-	private JPanel combinedTop = new JPanel();
-	private JTextField serverName;
-	private JTextField portNum;
-	private JPanel filePanel;
-	private JTextField currentSize;
-	private JTextField desiredSize;
-	private JLabel localServerName;
-	private JTextField localServerPortnum;
-	private JLabel info;
-	private JButton connect;
+	private final JPanel topPanel = new JPanel();
+	private final JPanel secondPanel = new JPanel();
+	private final JPanel combinedTop = new JPanel();
+	private final JTextField serverName;
+	private final JTextField portNum;
+	private final JPanel filePanel;
+	private final JTextField currentSize;
+	private final JTextField desiredSize;
+	private final JLabel localServerName;
+	private final JTextField localServerPortnum;
+	private final JLabel info;
+	private final JButton connect;
+	
+	private final ConcurrentLinkedQueue<String> infoQueue = new ConcurrentLinkedQueue<String>();
+	private final List<String> infoLines = new ArrayList<String>();
 
 	private String buttonText = "Logging in";
 
@@ -197,8 +183,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 							dispose();
 						} else {
 							connect.setText("Start");
-							info.setText("Logged in as " + AuthManager.getUsername());
-							
+							setStatus("Logged in as " + AuthManager.getUsername());	
 						}
 					}
 				});
@@ -216,7 +201,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 					desiredSize.setEditable(true);
 					serverName.setEditable(true);
 					portNum.setEditable(true);
-					info.setText("Server halted");
+					setStatus("Server halted");
 					localServerPortnum.setEditable(true);
 				} else {
 					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Error: server stopped notice received when it shouldn't have been running", "Error", JOptionPane.ERROR_MESSAGE);
@@ -224,11 +209,44 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 			}
 		});
 	}
+	
+	public void setStatus(String ... lines) {
+		for (int i = 0; i < lines.length; i++) {
+			setStatus(lines[i]);
+		}
+	}
 
-	public void setStatus(final String text) {
+	public void setStatus(String text) {
+		infoQueue.add(text);
+		updateStatus();
+	}
+	
+	private void updateStatus() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				info.setText(text);
+				if (infoQueue.isEmpty()) {
+					return;
+				}
+				while (!infoQueue.isEmpty()) {
+					String s = infoQueue.poll();
+					infoLines.add(s);
+					if (infoLines.size() > 3) {
+						infoLines.remove(0);
+					}
+				}
+				StringBuilder sb = new StringBuilder("<html>");
+				boolean first = true;
+				for (int i = 0; i < 3; i++) {
+					String line = i >= infoLines.size() ? "&nbsp" : infoLines.get(i);
+					if (!first) {
+						sb.append("<br>");
+					} else {
+						first = false;
+					}
+					sb.append(line);
+				}
+				sb.append("</html>");
+				info.setText(sb.toString());
 			}
 		});
 	}
@@ -296,10 +314,6 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 					return;
 				}
 				pf.setInt("cache_size", desired);
-				desiredSize.setEditable(false);
-				serverName.setEditable(false);
-				portNum.setEditable(false);
-				localServerPortnum.setEditable(false);
 				try {
 					pf.save();
 				} catch (IOException e) {
@@ -310,13 +324,17 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to start proxy server, " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
+				desiredSize.setEditable(false);
+				serverName.setEditable(false);
+				portNum.setEditable(false);
+				localServerPortnum.setEditable(false);
 				connectionListener.start();
 				connect.setText("Stop");
-				info.setText("Starting proxy server");
+				setStatus("Starting proxy server");
 			} else if (action.getActionCommand().equals("Stop")) {
 				connectionListener.interrupt();
 				connect.setText("Stopping");
-				info.setText("Halting proxy server");
+				setStatus("Halting proxy server");
 			} else if (action.getActionCommand().equals("Stopping")) {
 				JOptionPane.showMessageDialog(CraftProxyGUI.this, "Server halt is in progress", "Error", JOptionPane.ERROR_MESSAGE);
 			}
