@@ -1,4 +1,0 @@
-cache_size=48
-connect_hostname=localhost
-listen_port=12345
-connect_port=25565
