@@ -23,6 +23,10 @@
  */
 package com.raphfrk.craftproxyclient.gui;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
@@ -54,8 +58,23 @@ public class GUIManager {
 		if (loginInfo == null) {
 			return null;
 		}
-		int option = JOptionPane.showConfirmDialog(CraftProxyClient.getGUI(), "Login as " + AuthManager.getUsername() + "?", "Login", JOptionPane.YES_NO_OPTION);
-		if (option == 0) {
+		final AtomicInteger option = new AtomicInteger();
+		Runnable r = new Runnable() {
+			public void run() {
+				option.set(JOptionPane.showConfirmDialog(CraftProxyClient.getGUI(), "Login as " + AuthManager.getUsername() + "?", "Login", JOptionPane.YES_NO_OPTION));
+			}
+		};
+		
+		if (SwingUtilities.isEventDispatchThread()) {
+			r.run();
+		} else {
+			try {
+				SwingUtilities.invokeAndWait(r);
+			} catch (InvocationTargetException | InterruptedException e) {
+				return null;
+			}
+		}
+		if (option.get() == 0) {
 			return loginInfo;
 		} else {
 			return null;
@@ -63,24 +82,24 @@ public class GUIManager {
 	}
 
 	public static JSONObject getNewLoginDetails() {
-		JSONObject loginDetails = null;
-		do {
-			final LoginDialog login = new LoginDialog(CraftProxyClient.getGUI());
-			login.setVisible(true);
-			System.out.println("Thread " + Thread.currentThread());
-			loginDetails = AuthManager.authAccessToken(login.getEmail(), login.getPassword());
-			if (loginDetails == null) {
-				System.out.println("Invalid login details");
+		final AtomicReference<LoginDialog> login = new AtomicReference<LoginDialog>();
+		Runnable r = (new Runnable() {
+			public void run() {
+				login.set(new LoginDialog(CraftProxyClient.getGUI()));
+				login.get().setVisible(true);
+				login.get().dispose();
 			}
-			SwingUtilities.invokeLater(new Runnable() {
-				public void run() {
-					login.dispose();
-				}
-			});
-			break;
-		} while (loginDetails == null);
-		
-		return loginDetails;
+		});
+		if (SwingUtilities.isEventDispatchThread()) {
+			r.run();
+		} else {
+			try {
+				SwingUtilities.invokeAndWait(r);
+			} catch (InvocationTargetException | InterruptedException e) {
+				return null;
+			}
+		}
+		return AuthManager.authAccessToken(login.get().getEmail(), login.get().getPassword());
 	}
 
 }

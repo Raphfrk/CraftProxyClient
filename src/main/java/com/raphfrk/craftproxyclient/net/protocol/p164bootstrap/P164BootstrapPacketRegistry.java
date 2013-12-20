@@ -23,9 +23,7 @@
  */
 package com.raphfrk.craftproxyclient.net.protocol.p164bootstrap;
 
-import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.PacketRegistry;
-import com.raphfrk.craftproxyclient.net.protocol.p164.P164Handshake;
 import com.raphfrk.craftproxyclient.net.types.String16Type;
 import com.raphfrk.craftproxyclient.net.types.Type;
 
@@ -37,6 +35,7 @@ public class P164BootstrapPacketRegistry extends PacketRegistry {
 		super.register(2, new Type[] {tByte, tString, tString, tInt});
 		super.register(0xFC, new Type[] {tShortByteArray, tShortByteArray});
 		super.register(0xFD, new Type[] {tString, tShortByteArray, tShortByteArray});
+		super.register(0xFF, tString);
 		super.done();
 	}
 	

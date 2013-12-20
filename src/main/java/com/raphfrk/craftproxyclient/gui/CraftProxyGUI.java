@@ -62,7 +62,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	private JLabel info;
 	private JButton connect;
 
-	private String buttonText = "Start";
+	private String buttonText = "Logging in";
 
 	private final PropertiesFile pf;
 	
@@ -161,15 +161,27 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	}
 
 	public void init() {
-		JSONObject loginDetails = GUIManager.getLoginDetails();
+		this.setVisible(true);
 		
-		if (loginDetails == null) {
-			JOptionPane.showMessageDialog(null, "Login failed");
-			dispose();
-		} else {
-			this.setVisible(true);
-			info.setText("Logged in as " + AuthManager.getUsername());
-		}
+		Thread t = new Thread(new Runnable() {
+			public void run() {
+				final JSONObject loginDetails = GUIManager.getLoginDetails();
+
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run() {
+						if (loginDetails == null) {
+							JOptionPane.showMessageDialog(CraftProxyGUI.this, "Login failed");
+							dispose();
+						} else {
+							connect.setText("Start");
+							info.setText("Logged in as " + AuthManager.getUsername());
+							
+						}
+					}
+				});
+			}
+		});
+		t.start();
 	}
 	
 	public void setDone() {
@@ -208,7 +220,9 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	}
 
 	public void windowClosing(WindowEvent paramWindowEvent) {
-		
+		if (connectionListener != null) {
+			connectionListener.interrupt();
+		}
 	}
 
 	public void windowOpened(WindowEvent paramWindowEvent) {

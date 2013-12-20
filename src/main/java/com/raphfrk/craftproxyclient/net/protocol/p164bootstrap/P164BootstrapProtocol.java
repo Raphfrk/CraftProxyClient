@@ -23,8 +23,11 @@
  */
 package com.raphfrk.craftproxyclient.net.protocol.p164bootstrap;
 
+import java.io.IOException;
+
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
+import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
 import com.raphfrk.craftproxyclient.net.protocol.p164.P164Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.p164.P164Protocol;
@@ -47,6 +50,23 @@ public class P164BootstrapProtocol extends Protocol {
 	
 	public Protocol getProtocol(Handshake handshake) {
 		return protocol[((P164Handshake) handshake).getProtocolVersion()];
+	}
+	
+	public void handlePing(PacketChannel client) throws IOException {
+		StringBuilder sb = new StringBuilder();
+		sb.append((char) 0xA7);
+		sb.append((char) 0x31);
+		sb.append((char) 0);
+		sb.append("78");
+		sb.append((char) 0);
+		sb.append("1.64");
+		sb.append((char) 0);
+		sb.append("CraftProxy Client");
+		sb.append((char) 0);
+		sb.append("0");
+		sb.append((char) 0);
+		sb.append("20");
+		client.writePacket(new Packet(0xFF, new Object[] {(byte) 0xFF, sb.toString()}));
 	}
 
 }

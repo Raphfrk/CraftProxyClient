@@ -23,14 +23,18 @@
  */
 package com.raphfrk.craftproxyclient.net;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.nio.charset.StandardCharsets;
 
 import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
+import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
 import com.raphfrk.craftproxyclient.net.protocol.p164bootstrap.P164BootstrapProtocol;
@@ -59,78 +63,91 @@ public class ConnectionListener extends Thread {
 		TransferConnection serverToClient = null;
 		TransferConnection clientToServer = null;
 		try {
-			gui.setStatus("<html>Waiting for connection<br>localhost:" + localAddr.getPort() + "</html>");
-			SocketChannel c;
-			try {
-				c = socket.accept();
-			} catch (IOException e) {
-				return;
-			}
-			Protocol protocol = null;
-			PacketChannel client = null;
-			try {
-				client = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+			boolean ping = true;
+			while (ping) {
+				gui.setStatus("<html>Waiting for connection<br>localhost:" + localAddr.getPort() + "</html>");
+				SocketChannel c;
 				try {
-					int id = client.getPacketId();
-					Handshake handshake = null;
+					c = socket.accept();
+				} catch (IOException e) {
+					return;
+				}
+				Protocol protocol = null;
+				PacketChannel client = null;
+				try {
+					client = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+					try {
+						int id = client.getPacketId();
+						Handshake handshake = null;
 
-					if (id == 2) {
-						// 1.64 protocol
-						client.setRegistry(p164Bootstrap.getPacketRegistry());
-						handshake = p164Bootstrap.getHandshake(client.getPacket());
-						protocol = p164Bootstrap.getProtocol(handshake);
+						if (id == 0xFE) {
+							ByteBuffer b = ByteBuffer.allocate(1);
+							if (client.getRawChannel().read(b) != 1 || b.get(0) != 1) {
+								return;
+							}
+							client.setRegistry(p164Bootstrap.getPacketRegistry());
+							p164Bootstrap.handlePing(client);
+							continue;
+						}
+						ping = false;
+						if (id == 2) {
+							// 1.64 protocol
+							client.setRegistry(p164Bootstrap.getPacketRegistry());
+							handshake = p164Bootstrap.getHandshake(client.getPacket());
+							protocol = p164Bootstrap.getProtocol(handshake);
+							if (protocol == null) {
+								return;
+							}
+							client.setRegistry(protocol.getPacketRegistry());
+						}
+
+
 						if (protocol == null) {
 							return;
 						}
-						client.setRegistry(protocol.getPacketRegistry());
-					}
 
+						gui.setStatus("<html>Connection received, login started<br>Protocol: " + protocol.getName() + "</html>");
 
-					if (protocol == null) {
-						return;
-					}
-					
-					gui.setStatus("<html>Connection received, login started<br>Protocol: " + protocol.getName() + "</html>");
+						SocketChannel s = SocketChannel.open();
+						s.connect(serverAddr);
 
-					SocketChannel s = SocketChannel.open();
-					s.connect(serverAddr);
-
-					PacketChannel server = null;
-					try {
-						server = new PacketChannel(s, BUFFER_SIZE, WRITE_BUFFER_SIZE);
-						server.setRegistry(protocol.getPacketRegistry());
-						protocol.handleLogin(handshake, client, server, serverAddr);
-					} catch (IOException e) {
-						if (server != null) {
-							protocol.sendKick("Connection closing " + e.getMessage(), client);
-							s.close();
-							return;
+						PacketChannel server = null;
+						try {
+							server = new PacketChannel(s, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+							server.setRegistry(protocol.getPacketRegistry());
+							protocol.handleLogin(handshake, client, server, serverAddr);
+						} catch (IOException e) {
+							if (server != null) {
+								protocol.sendKick("Connection closing " + e.getMessage(), client);
+								s.close();
+								return;
+							}
 						}
-					}
-					
-					gui.setStatus("<html>Login completed<br>Protocol: " + protocol.getName() + "</html>");
 
+						gui.setStatus("<html>Login completed<br>Protocol: " + protocol.getName() + "</html>");
+
+						try {
+							serverToClient = new TransferConnection(protocol, server, client);
+							clientToServer = new TransferConnection(protocol, client, server);
+
+							serverToClient.start();
+							clientToServer.start();
+
+							serverToClient.join();
+							clientToServer.join();
+						} catch (InterruptedException e) {
+						} finally {
+							serverToClient.queuePacket(protocol.getKick("Proxy halted"));
+							s.close();
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				} finally {
 					try {
-						serverToClient = new TransferConnection(protocol, server, client);
-						clientToServer = new TransferConnection(protocol, client, server);
-
-						serverToClient.start();
-						clientToServer.start();
-
-						serverToClient.join();
-						clientToServer.join();
-					} catch (InterruptedException e) {
-					} finally {
-						serverToClient.queuePacket(protocol.getKick("Proxy halted"));
-						s.close();
+						c.close();
+					} catch (IOException e) {
 					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			} finally {
-				try {
-					c.close();
-				} catch (IOException e) {
 				}
 			}
 		} finally {
