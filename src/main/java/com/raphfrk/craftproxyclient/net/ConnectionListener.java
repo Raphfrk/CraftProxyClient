@@ -132,6 +132,9 @@ public class ConnectionListener extends Thread {
 						try {
 							serverToClient = new TransferConnection(protocol, server, client);
 							clientToServer = new TransferConnection(protocol, client, server);
+							
+							serverToClient.setOther(clientToServer);
+							clientToServer.setOther(serverToClient);
 
 							serverToClient.start();
 							clientToServer.start();

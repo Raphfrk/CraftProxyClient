@@ -29,6 +29,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.raphfrk.craftproxyclient.message.InitMessage;
+import com.raphfrk.craftproxyclient.message.MessageManager;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
@@ -40,12 +42,17 @@ public class TransferConnection extends Thread {
 	private final Protocol protocol;
 	private final ReentrantLock outLock = new ReentrantLock();
 	private final ConcurrentLinkedQueue<Packet> sendQueue = new ConcurrentLinkedQueue<Packet>();
+	private TransferConnection other;
 	private AtomicBoolean running = new AtomicBoolean(true);
 	
 	public TransferConnection(Protocol protocol, PacketChannel in, PacketChannel out) {
 		this.protocol = protocol;
 		this.in = in;
 		this.out = out;
+	}
+	
+	public void setOther(TransferConnection other) {
+		this.other = other;
 	}
 	
 	public void run() {
@@ -55,9 +62,28 @@ public class TransferConnection extends Thread {
 				if (!running.get()) {
 					break;
 				}
-				ids.add(in.getPacketId());
+				int id = in.getPacketId();
+				ids.add(id);
 				if (ids.size() > 100) {
 					ids.removeFirst();
+				}
+				if (protocol.isMessagePacket(id)) {
+					in.mark();
+					Packet p = in.getPacket();
+					String channel = protocol.getMessageChannel(p);
+					if ("REGISTER".equals(channel)) {
+						byte[] data = protocol.getMessageData(p);
+						String[] channels = MessageManager.splitRegisterData(data);
+						for (String c : channels) {
+							if (MessageManager.getChannelName().equals(c)) {
+								other.queuePacket(protocol.getRegisterPacket(MessageManager.getChannelName()));
+								other.queuePacket(protocol.getSubMessage(new InitMessage()));
+							}
+						}
+					}
+					System.out.println("Received message " + p.getField(1));
+					in.reset();
+					in.discard();
 				}
 				outLock.lock();
 				try {

@@ -24,7 +24,9 @@
 package com.raphfrk.craftproxyclient.net.protocol.p164bootstrap;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
+import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
@@ -67,6 +69,61 @@ public class P164BootstrapProtocol extends Protocol {
 		sb.append((char) 0);
 		sb.append("20");
 		client.writePacket(new Packet(0xFF, new Object[] {(byte) 0xFF, sb.toString()}));
+	}
+
+	@Override
+	public Packet getSubMessage(SubMessage s) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void sendSubMessage(SubMessage s, PacketChannel client) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public String getName() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void sendKick(String message, PacketChannel client) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Packet getKick(String message) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean isMessagePacket(int id) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public SubMessage getMessagePacket(Packet p) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Packet getRegisterPacket(String channel) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public String getMessageChannel(Packet p) {
+		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	public byte[] getMessageData(Packet p) {
+		throw new UnsupportedOperationException();
 	}
 
 }

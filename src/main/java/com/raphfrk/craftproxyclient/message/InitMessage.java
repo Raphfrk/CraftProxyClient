@@ -21,45 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.protocol;
+package com.raphfrk.craftproxyclient.message;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
-import com.raphfrk.craftproxyclient.message.SubMessage;
-
-public abstract class Protocol {
+public class InitMessage extends SubMessage {
 	
-	private final PacketRegistry registry;
+	private final static int id = 0;
 	
-	protected Protocol(PacketRegistry registry) {
-		this.registry = registry;
-	}
-
-	public PacketRegistry getPacketRegistry() {
-		return registry;
+	public static String getSubCommandRaw() {
+		return "init";
 	}
 	
-	public abstract Packet getSubMessage(SubMessage s) throws IOException;
-	
-	public abstract void sendSubMessage(SubMessage s, PacketChannel client) throws IOException;
-	
-	public abstract String getName();
-	
-	public abstract void sendKick(String message, PacketChannel client) throws IOException;
-	
-	public abstract Packet getKick(String message);
-	
-	public abstract boolean handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException;
-	
-	public abstract boolean isMessagePacket(int id);
-	
-	public abstract String getMessageChannel(Packet p);
-	
-	public abstract byte[] getMessageData(Packet p);
-	
-	public abstract SubMessage getMessagePacket(Packet p);
-	
-	public abstract Packet getRegisterPacket(String channel);
-	
+	public InitMessage() {
+	}
+
+	public InitMessage(byte[] data) throws IOException {
+		if (data.length != 0) {
+			throw new IOException("Init message has no data");
+		}
+	}
+
+	@Override
+	public String getSubCommand() {
+		return getSubCommandRaw();
+	}
+
+	@Override
+	public byte[] getData() {
+		return empty;
+	}
+
+	@Override
+	public int getId() {
+		return id;
+	}
 }

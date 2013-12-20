@@ -21,45 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.protocol;
+package com.raphfrk.craftproxyclient.message;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
-import com.raphfrk.craftproxyclient.message.SubMessage;
-
-public abstract class Protocol {
+public abstract class SubMessage {
 	
-	private final PacketRegistry registry;
-	
-	protected Protocol(PacketRegistry registry) {
-		this.registry = registry;
-	}
+	protected static byte[] empty = new byte[0];
 
-	public PacketRegistry getPacketRegistry() {
-		return registry;
+	public SubMessage() {
 	}
 	
-	public abstract Packet getSubMessage(SubMessage s) throws IOException;
+	public int getId() {
+		return -1;
+	}
 	
-	public abstract void sendSubMessage(SubMessage s, PacketChannel client) throws IOException;
+	public abstract String getSubCommand();
 	
-	public abstract String getName();
+	public abstract byte[] getData();
 	
-	public abstract void sendKick(String message, PacketChannel client) throws IOException;
-	
-	public abstract Packet getKick(String message);
-	
-	public abstract boolean handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException;
-	
-	public abstract boolean isMessagePacket(int id);
-	
-	public abstract String getMessageChannel(Packet p);
-	
-	public abstract byte[] getMessageData(Packet p);
-	
-	public abstract SubMessage getMessagePacket(Packet p);
-	
-	public abstract Packet getRegisterPacket(String channel);
+	public byte[] getFullData() {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(bos);
+		try {
+			MessageManager.writeString(getSubCommand(), 16, dos);
+			dos.write(getData());
+			dos.flush();
+		} catch (IOException e) {
+			return null;
+		}
+		return bos.toByteArray();
+	}
 	
 }

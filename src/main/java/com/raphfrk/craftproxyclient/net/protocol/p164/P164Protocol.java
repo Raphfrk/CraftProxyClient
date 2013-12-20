@@ -23,9 +23,12 @@
  */
 package com.raphfrk.craftproxyclient.net.protocol.p164;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
@@ -42,6 +45,8 @@ import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 
 import com.raphfrk.craftproxyclient.crypt.Crypt;
+import com.raphfrk.craftproxyclient.message.MessageManager;
+import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.CryptByteChannelWrapper;
 import com.raphfrk.craftproxyclient.net.auth.AuthManager;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
@@ -111,7 +116,7 @@ public class P164Protocol extends Protocol {
 		}
 		
 		P164LoginRequest login = new P164LoginRequest(server.getPacket());
-		client.writePacket(login);	
+		client.writePacket(login);
 		
 		return true;
 	}
@@ -124,6 +129,16 @@ public class P164Protocol extends Protocol {
 	@Override
 	public Packet getKick(String message) {
 		return new P164Kick(message);
+	}
+	
+	@Override
+	public void sendSubMessage(SubMessage message, PacketChannel client) throws IOException {
+		client.writePacket(getSubMessage(message));
+	}
+	
+	@Override
+	public Packet getSubMessage(SubMessage message) throws IOException {
+		return new Packet(0xFA, new Object[] {(byte) 0xFA, MessageManager.getChannelName(), MessageManager.encode(message.getSubCommand(), message.getData())});
 	}
 	
 	@Override
@@ -211,5 +226,30 @@ public class P164Protocol extends Protocol {
                 return null;
         }
 }
+
+	@Override
+	public boolean isMessagePacket(int id) {
+		return id == 0xFA;
+	}
+	
+	@Override
+	public String getMessageChannel(Packet p) {
+		return (String) p.getField(1);
+	}
+	
+	@Override
+	public byte[] getMessageData(Packet p) {
+		return (byte[]) p.getField(2);
+	}
+
+	@Override
+	public SubMessage getMessagePacket(Packet p) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Packet getRegisterPacket(String channel) {
+		return new Packet(0xFA, new Object[] {(byte) 0xFA, "REGISTER", MessageManager.getChannelName().getBytes(StandardCharsets.UTF_8)});
+	}
 
 }
