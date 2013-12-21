@@ -81,7 +81,6 @@ public class TransferConnection extends Thread {
 							}
 						}
 					}
-					System.out.println("Received message " + p.getField(1));
 					in.reset();
 					in.discard();
 				}

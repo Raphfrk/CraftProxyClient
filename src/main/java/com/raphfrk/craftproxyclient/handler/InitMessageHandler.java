@@ -30,7 +30,6 @@ public class InitMessageHandler implements Handler<InitMessage> {
 
 	@Override
 	public void handle(TransferConnection connection, boolean fromServer, InitMessage m) {
-		System.out.println("Received init message, fromServer is " + fromServer);
 	}
 
 }

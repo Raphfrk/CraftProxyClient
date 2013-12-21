@@ -23,34 +23,30 @@
  */
 package com.raphfrk.craftproxyclient.net;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 
 import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
-import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
 import com.raphfrk.craftproxyclient.net.protocol.p164bootstrap.P164BootstrapProtocol;
 
 public class ConnectionListener extends Thread {
-	
+
 	private final static int BUFFER_SIZE = 4 * 1024 * 1024;
 	private final static int WRITE_BUFFER_SIZE = 1024 * 1024;
-	
+
 	private final ServerSocketChannel socket;
 	private final InetSocketAddress serverAddr;
 	private final InetSocketAddress localAddr;
 	private final CraftProxyGUI gui;
-	
+
 	private final P164BootstrapProtocol p164Bootstrap = new P164BootstrapProtocol();
-	
+
 	public ConnectionListener(CraftProxyGUI gui, int port, String serverHostname, int serverPort) throws IOException {
 		this.gui = gui;
 		this.serverAddr = new InetSocketAddress(serverHostname, serverPort);
@@ -58,124 +54,129 @@ public class ConnectionListener extends Thread {
 		this.socket = ServerSocketChannel.open();
 		this.socket.socket().bind(localAddr);
 	}
-	
+
 	public void run() {
-		TransferConnection serverToClient = null;
-		TransferConnection clientToServer = null;
 		try {
-			boolean ping = true;
-			while (ping) {
-				String port = localAddr.getPort() != 25565 ? (":" + localAddr.getPort()) : "";
-				gui.setStatus("Waiting for connection, connect to localhost" + port);
-				SocketChannel c;
+			while (!isInterrupted()) {
+				TransferConnection serverToClient = null;
+				TransferConnection clientToServer = null;
 				try {
-					c = socket.accept();
-				} catch (IOException e) {
-					return;
-				}
-				Protocol protocol = null;
-				PacketChannel client = null;
-				try {
-					client = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+					String port = localAddr.getPort() != 25565 ? (":" + localAddr.getPort()) : "";
+					gui.setStatus("Waiting for connection, connect to localhost" + port);
+					SocketChannel c;
 					try {
-						int id = client.getPacketId();
-
-						Handshake handshake = null;
-
-						if (id == 0xFE) {
-							ByteBuffer b = ByteBuffer.allocate(1);
-							if (client.getRawChannel().read(b) != 1 || b.get(0) != 1) {
-								return;
-							}
-							client.setRegistry(p164Bootstrap.getPacketRegistry());
-							p164Bootstrap.handlePing(client);
-							gui.setStatus("Ping received");
-							continue;
-						}
-						ping = false;
-						if (id == 2) {
-							// 1.64 protocol
-							client.setRegistry(p164Bootstrap.getPacketRegistry());
-							handshake = p164Bootstrap.getHandshake(client.getPacket());
-							protocol = p164Bootstrap.getProtocol(handshake);
-							if (protocol == null) {
-								return;
-							}
-							client.setRegistry(protocol.getPacketRegistry());
-						}
-
-
-						if (protocol == null) {
-							return;
-						}
-
-						gui.setStatus("Connection received, login started", "Protocol: " + protocol.getName());
-
-						SocketChannel s = SocketChannel.open();
-						s.connect(serverAddr);
-
-						PacketChannel server = null;
-						try {
-							server = new PacketChannel(s, BUFFER_SIZE, WRITE_BUFFER_SIZE);
-							server.setRegistry(protocol.getPacketRegistry());
-							protocol.handleLogin(handshake, client, server, serverAddr);
-						} catch (IOException e) {
-							if (server != null) {
-								protocol.sendKick("Connection closing, " + e.getMessage(), client);
-								s.close();
-								return;
-							}
-						}
-
-						gui.setStatus("Login completed", "Protocol: " + protocol.getName());
-
-						try {
-							serverToClient = new TransferConnection(protocol, server, client);
-							clientToServer = new TransferConnection(protocol, client, server);
-							
-							serverToClient.setOther(clientToServer);
-							clientToServer.setOther(serverToClient);
-
-							serverToClient.start();
-							clientToServer.start();
-
-							serverToClient.join();
-							clientToServer.join();
-						} catch (InterruptedException e) {
-						} finally {
-							serverToClient.queuePacket(protocol.getKick("Proxy halted"));
-							s.close();
-						}
+						c = socket.accept();
 					} catch (IOException e) {
-						e.printStackTrace();
+						continue;
+					}
+					Protocol protocol = null;
+					PacketChannel client = null;
+					try {
+						client = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+						try {
+							int id = client.getPacketId();
+
+							Handshake handshake = null;
+
+							if (id == 0xFE) {
+								ByteBuffer b = ByteBuffer.allocate(1);
+								if (client.getRawChannel().read(b) != 1 || b.get(0) != 1) {
+									continue;
+								}
+								client.setRegistry(p164Bootstrap.getPacketRegistry());
+								p164Bootstrap.handlePing(client);
+								gui.setStatus("Ping received");
+								continue;
+							}
+
+							if (id == 2) {
+								// 1.64 protocol
+								client.setRegistry(p164Bootstrap.getPacketRegistry());
+								handshake = p164Bootstrap.getHandshake(client.getPacket());
+								protocol = p164Bootstrap.getProtocol(handshake);
+								if (protocol == null) {
+									continue;
+								}
+								client.setRegistry(protocol.getPacketRegistry());
+							}
+
+
+							if (protocol == null) {
+								continue;
+							}
+							
+							gui.setStatus("Connection received, login started", "Protocol: " + protocol.getName());
+
+							SocketChannel s = SocketChannel.open();
+							try {
+								s.connect(serverAddr);
+							} catch (IOException e) {
+								protocol.sendKick("Unable to connect to server", client);
+								continue;
+							}
+
+							PacketChannel server = null;
+							try {
+								server = new PacketChannel(s, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+								server.setRegistry(protocol.getPacketRegistry());
+								protocol.handleLogin(handshake, client, server, serverAddr);
+							} catch (IOException e) {
+								if (server != null) {
+									protocol.sendKick("Connection closing, " + e.getMessage(), client);
+									s.close();
+									continue;
+								}
+							}
+
+							gui.setStatus("Login completed", "Protocol: " + protocol.getName());
+
+							try {
+								serverToClient = new TransferConnection(protocol, server, client);
+								clientToServer = new TransferConnection(protocol, client, server);
+
+								serverToClient.setOther(clientToServer);
+								clientToServer.setOther(serverToClient);
+
+								serverToClient.start();
+								clientToServer.start();
+
+								serverToClient.join();
+								clientToServer.join();
+							} catch (InterruptedException e) {
+							} finally {
+								serverToClient.queuePacket(protocol.getKick("Proxy halted"));
+								s.close();
+							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					} finally {
+						try {
+							c.close();
+						} catch (IOException e) {
+						}
 					}
 				} finally {
-					try {
-						c.close();
-					} catch (IOException e) {
+					while (serverToClient != null && serverToClient.isAlive()) {
+						try {
+							serverToClient.join();
+						} catch (InterruptedException e) {
+						}
+					}
+					while (clientToServer != null && clientToServer.isAlive()) {
+						try {
+							clientToServer.join();
+						} catch (InterruptedException e) {
+						}
 					}
 				}
 			}
 		} finally {
-			while (serverToClient != null && serverToClient.isAlive()) {
-				try {
-					serverToClient.join();
-				} catch (InterruptedException e) {
-				}
-			}
-			while (clientToServer != null && clientToServer.isAlive()) {
-				try {
-					clientToServer.join();
-				} catch (InterruptedException e) {
-				}
-			}
 			try {
 				socket.close();
 			} catch (IOException e) {
 			}
 			gui.setDone();
 		}
-
 	}
-	
 }

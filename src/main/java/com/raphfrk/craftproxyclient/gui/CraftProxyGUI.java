@@ -86,13 +86,13 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 		} catch (IOException e) {
 		}
 		
-		String defaultHostname = pf.getString("connect_hostname", "localhost");
+		String defaultHostname = pf.getString("connect_hostname", "");
 		int defaultPort = pf.getInt("connect_port", 20000);
 		int listenPort = pf.getInt("listen_port", 25565);
 		int desired = pf.getInt("cache_size", 48);
 
 		setTitle("CraftProxyClient Local");
-		setSize(450,325);
+		setSize(500,375);
 		setLocation(40,150);
 
 		topPanel.setLayout(new BorderLayout());
@@ -184,6 +184,9 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 						} else {
 							connect.setText("Start");
 							setStatus("Logged in as " + AuthManager.getUsername());	
+							if (!"".equals(serverName.getText())) {
+								startProxyServer();
+							}
 						}
 					}
 				});
@@ -224,19 +227,20 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	private void updateStatus() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
+				int lines = 6;
 				if (infoQueue.isEmpty()) {
 					return;
 				}
 				while (!infoQueue.isEmpty()) {
 					String s = infoQueue.poll();
 					infoLines.add(s);
-					if (infoLines.size() > 3) {
+					if (infoLines.size() > lines) {
 						infoLines.remove(0);
 					}
 				}
 				StringBuilder sb = new StringBuilder("<html>");
 				boolean first = true;
-				for (int i = 0; i < 3; i++) {
+				for (int i = 0; i < lines; i++) {
 					String line = i >= infoLines.size() ? "&nbsp" : infoLines.get(i);
 					if (!first) {
 						sb.append("<br>");
@@ -289,48 +293,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 		if(action.getSource().equals(connect)) {
 
 			if (action.getActionCommand().equals("Start")) {
-				pf.setString("connect_hostname", serverName.getText());
-				int connectPort;
-				try {
-					connectPort = Integer.parseInt(portNum.getText());
-				} catch (NumberFormatException nfe) {
-					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to parse server port number", "Error", JOptionPane.ERROR_MESSAGE);
-					return;
-				}
-				pf.setInt("connect_port", connectPort);
-				int localPort;
-				try {
-					localPort = Integer.parseInt(localServerPortnum.getText());
-				} catch (NumberFormatException nfe) {
-					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to parse local port number", "Error", JOptionPane.ERROR_MESSAGE);
-					return;
-				}
-				pf.setInt("listen_port", localPort);
-				int desired;
-				try {
-					desired = Integer.parseInt(desiredSize.getText());
-				} catch (NumberFormatException nfe) {
-					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to desired cache size", "Error", JOptionPane.ERROR_MESSAGE);
-					return;
-				}
-				pf.setInt("cache_size", desired);
-				try {
-					pf.save();
-				} catch (IOException e) {
-				}
-				try {
-					connectionListener = new ConnectionListener(this, localPort, serverName.getText(), connectPort);
-				} catch (IOException e) {
-					JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to start proxy server, " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-					return;
-				}
-				desiredSize.setEditable(false);
-				serverName.setEditable(false);
-				portNum.setEditable(false);
-				localServerPortnum.setEditable(false);
-				connectionListener.start();
-				connect.setText("Stop");
-				setStatus("Starting proxy server");
+				startProxyServer();
 			} else if (action.getActionCommand().equals("Stop")) {
 				connectionListener.interrupt();
 				connect.setText("Stopping");
@@ -339,6 +302,51 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 				JOptionPane.showMessageDialog(CraftProxyGUI.this, "Server halt is in progress", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
+	}
+	
+	private void startProxyServer() {
+		pf.setString("connect_hostname", serverName.getText());
+		int connectPort;
+		try {
+			connectPort = Integer.parseInt(portNum.getText());
+		} catch (NumberFormatException nfe) {
+			JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to parse server port number", "Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		pf.setInt("connect_port", connectPort);
+		int localPort;
+		try {
+			localPort = Integer.parseInt(localServerPortnum.getText());
+		} catch (NumberFormatException nfe) {
+			JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to parse local port number", "Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		pf.setInt("listen_port", localPort);
+		int desired;
+		try {
+			desired = Integer.parseInt(desiredSize.getText());
+		} catch (NumberFormatException nfe) {
+			JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to desired cache size", "Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		pf.setInt("cache_size", desired);
+		try {
+			pf.save();
+		} catch (IOException e) {
+		}
+		try {
+			connectionListener = new ConnectionListener(this, localPort, serverName.getText(), connectPort);
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to start proxy server, " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		desiredSize.setEditable(false);
+		serverName.setEditable(false);
+		portNum.setEditable(false);
+		localServerPortnum.setEditable(false);
+		connectionListener.start();
+		connect.setText("Stop");
+		setStatus("Starting proxy server");
 	}
 
 
