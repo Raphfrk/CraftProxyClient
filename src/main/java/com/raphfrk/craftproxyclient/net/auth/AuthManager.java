@@ -196,11 +196,11 @@ public class AuthManager {
 		return (String) loginDetails.get("accessToken");
 	}
 	
-	public static boolean authServer(String hash) {
+	public static void authServer(String hash) throws IOException {
 		URL url;
 		try {
 			if (loginDetails == null) {
-				return false;
+				throw new IOException("Not logged in");
 			}
 
 			String username;
@@ -210,37 +210,33 @@ public class AuthManager {
 				accessToken = URLEncoder.encode(getAccessToken(), "UTF-8");
 				hash = URLEncoder.encode(hash, "UTF-8");
 			} catch (UnsupportedEncodingException e) {
-				return false;
+				throw new IOException("Username/password encoding error", e);
 			}
 
 			String urlString = sessionServer + "user=" + username + "&sessionId=" + accessToken + "&serverId=" + hash;
 			url = new URL(urlString);
 		} catch (MalformedURLException e) {
-			return false;
+			throw new IOException("Auth server URL error", e);
 		}
+		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+		con.setInstanceFollowRedirects(false); 
+		con.setReadTimeout(5000);
+		con.setConnectTimeout(5000);
+		con.connect();
+
+		if (con.getResponseCode() != 200) {
+			throw new IOException("Auth server rejected username and password");
+		}
+
+		BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
 		try {
-			HttpURLConnection con = (HttpURLConnection) url.openConnection();
-			con.setInstanceFollowRedirects(false); 
-			con.setReadTimeout(5000);
-			con.setConnectTimeout(5000);
-			con.connect();
-
-			if (con.getResponseCode() != 200) {
-				return false;
+			String reply = reader.readLine();
+			if (!"OK".equals(reply)) {
+				throw new IOException("Auth server replied (" + reply + ")");
 			}
-
-			BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
-			try {
-				String reply = reader.readLine();
-				return "OK".equals(reply);
-			} finally {
-				reader.close();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			return false;
+		} finally {
+			reader.close();
 		}
-		
 	}
 	
 	private static JSONObject readAccessToken() {

@@ -163,10 +163,7 @@ public class P164Protocol extends Protocol {
 	private boolean authSession(byte[] secret, PacketChannel client, P164EncryptionKeyRequest request) throws IOException {
 		String hash = SHA1Hash(new Object[] {request.getServerId(), secret, request.getPubKey()});
 		
-		if (!AuthManager.authServer(hash)) {
-			sendKick("Unable to connect to auth server", client);
-			return false;
-		}
+		AuthManager.authServer(hash);
 		
 		return true;
 	}

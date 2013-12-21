@@ -121,7 +121,7 @@ public class ConnectionListener extends Thread {
 							protocol.handleLogin(handshake, client, server, serverAddr);
 						} catch (IOException e) {
 							if (server != null) {
-								protocol.sendKick("Connection closing " + e.getMessage(), client);
+								protocol.sendKick("Connection closing, " + e.getMessage(), client);
 								s.close();
 								return;
 							}
