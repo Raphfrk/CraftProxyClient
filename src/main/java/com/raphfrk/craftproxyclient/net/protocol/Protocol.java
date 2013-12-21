@@ -62,4 +62,8 @@ public abstract class Protocol {
 	
 	public abstract Packet getRegisterPacket(String channel);
 	
+	public abstract boolean isDataPacket(int id);
+	
+	public abstract byte[] getDataArray(Packet p);
+	
 }

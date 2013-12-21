@@ -126,4 +126,14 @@ public class P164BootstrapProtocol extends Protocol {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public boolean isDataPacket(int id) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public byte[] getDataArray(Packet p) {
+		throw new UnsupportedOperationException();
+	}
+
 }

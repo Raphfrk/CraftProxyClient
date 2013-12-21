@@ -1,5 +1,5 @@
 /*
- * This file is part of CraftProxyClient.
+ * This file is part of CraftProxyPlugin.
  *
  * Copyright (c) 2013-2014, Raphfrk <http://raphfrk.com>
  *
@@ -21,45 +21,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.types;
+package com.raphfrk.craftproxyclient.net.protocol;
 
-import java.nio.ByteBuffer;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
-public class SpawnDataType extends Type<int[]> {
+public class CompressionManager {
 
-	public boolean writeRaw(int[] data, ByteBuffer buf) {
-		throw new UnsupportedOperationException();
+	private static final ThreadLocal<Deflater> deflater = new ThreadLocal<Deflater>() {
+		protected Deflater initialValue() {
+			return new Deflater(6);
+		}
+	};
+	
+	private static final ThreadLocal<Inflater> inflater = new ThreadLocal<Inflater>() {
+		protected Inflater initialValue() {
+			return new Inflater();
+		}
+	};
+	
+	public static int deflate(byte[] input, byte[] output) {
+		Deflater d = deflater.get();
+		d.reset();
+		d.setInput(input);
+		d.finish();
+		
+		int deflatedSize = d.deflate(output);
+		d.reset();
+		return deflatedSize;
 	}
 	
-	public static int[] getRaw(ByteBuffer buf) {
-		throw new UnsupportedOperationException();
-	}
-	
-	public static int getLengthRaw(ByteBuffer buf) {
-		if (buf.remaining() < 4) {
+	public static int inflate(byte[] input, byte[] output) {
+		Inflater i = inflater.get();
+		i.reset();
+		i.setInput(input);
+		if (!i.finished()) {
 			return -1;
 		}
-		int id = buf.getInt(buf.position());
-		if (id == 0) {
-			return 4;
-		} else {
-			return 10;
+		try {
+			int inflatedSize = i.inflate(output);
+			i.reset();
+			return inflatedSize;
+		} catch (DataFormatException e) {
+			return -1;
 		}
-	}
-	
-	@Override
-	public int[] get(ByteBuffer buf) {
-		return getRaw(buf);
-	}
-
-	@Override
-	public int getLength(ByteBuffer buf) {
-		return getLengthRaw(buf);
-	}
-
-	@Override
-	public boolean write(int[] data, ByteBuffer buf) {
-		return writeRaw(data, buf);
 	}
 
 }

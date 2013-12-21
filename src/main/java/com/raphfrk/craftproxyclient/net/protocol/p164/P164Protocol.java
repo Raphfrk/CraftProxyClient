@@ -23,8 +23,6 @@
  */
 package com.raphfrk.craftproxyclient.net.protocol.p164;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -49,6 +47,7 @@ import com.raphfrk.craftproxyclient.message.MessageManager;
 import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.CryptByteChannelWrapper;
 import com.raphfrk.craftproxyclient.net.auth.AuthManager;
+import com.raphfrk.craftproxyclient.net.protocol.CompressionManager;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
@@ -247,6 +246,29 @@ public class P164Protocol extends Protocol {
 	@Override
 	public Packet getRegisterPacket(String channel) {
 		return new Packet(0xFA, new Object[] {(byte) 0xFA, "REGISTER", MessageManager.getChannelName().getBytes(StandardCharsets.UTF_8)});
+	}
+
+	@Override
+	public boolean isDataPacket(int id) {
+		return id == 0x33 || id == 0x38;
+	}
+
+	@Override
+	public byte[] getDataArray(Packet p) {
+		if (p.getId() == 0x33) {
+			int primaryBitmask = ((Short) p.getField(4)) & 0xFFFF;
+			int sections = Integer.bitCount(primaryBitmask);
+			int maxSize = 256 + sections * 16384;
+			
+			byte[] data = (byte[]) p.getField(6);
+			
+			byte[] inflatedData = new byte[maxSize];
+			int inflatedSize = CompressionManager.inflate(data, inflatedData);
+			System.out.println("Inflated size " + inflatedSize);
+			return inflatedData;
+		} else  {
+			return null;
+		}
 	}
 
 }

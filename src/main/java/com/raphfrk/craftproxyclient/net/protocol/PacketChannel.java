@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.locks.Lock;
 
 import com.raphfrk.craftproxyclient.net.SingleByteByteChannelWrapper;
 import com.raphfrk.craftproxyclient.net.types.Type;
@@ -154,6 +155,22 @@ public class PacketChannel {
 	}
 	
 	/**
+	 * Writes a packet to the channel using the lock for syncronization
+	 * 
+	 * @param p
+	 * @param l
+	 * @throws IOException
+	 */
+	public void writePacketLocked(Packet p, Lock l) throws IOException {
+		l.lock();
+		try {
+			writePacket(p);
+		} finally {
+			l.unlock();
+		}
+	}
+	
+	/**
 	 * Shutsdown the output channel
 	 * 
 	 * @throws IOException
@@ -171,6 +188,21 @@ public class PacketChannel {
 	 */
 	public void transferPacket(PacketChannel channel) throws IOException {
 		transferPacket(channel.channel);
+	}
+	
+	/**
+	 * Transfers the next packet to a channel using the lock for synchronization
+	 * 
+	 * @param channel the destination channel
+	 * @throws IOException
+	 */
+	public void transferPacketLocked(PacketChannel channel, Lock l) throws IOException {
+		l.lock();
+		try {
+			transferPacket(channel.channel);
+		} finally {
+			l.unlock();
+		}
 	}
 	
 	/**

@@ -83,12 +83,13 @@ public class TransferConnection extends Thread {
 					}
 					in.reset();
 					in.discard();
-				}
-				outLock.lock();
-				try {
-					in.transferPacket(out);
-				} finally {
-					outLock.unlock();
+					in.transferPacketLocked(out, outLock);
+				} else if (protocol.isDataPacket(id)) {
+					Packet p = in.getPacket();
+					byte[] data = protocol.getDataArray(p);
+					out.writePacketLocked(p, outLock);
+				} else {
+					in.transferPacketLocked(out, outLock);
 				}
 				while (!sendQueue.isEmpty()) {
 					outLock.lock();
