@@ -41,6 +41,8 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
+import org.bouncycastle.util.encoders.Hex;
 
 import com.raphfrk.craftproxyclient.crypt.Crypt;
 import com.raphfrk.craftproxyclient.message.MessageManager;
@@ -52,6 +54,7 @@ import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
+import com.raphfrk.craftproxyclient.net.types.values.BulkData;
 
 public class P164Protocol extends Protocol {
 	
@@ -264,10 +267,38 @@ public class P164Protocol extends Protocol {
 			
 			byte[] inflatedData = new byte[maxSize];
 			int inflatedSize = CompressionManager.inflate(data, inflatedData);
-			System.out.println("Inflated size " + inflatedSize);
-			return inflatedData;
-		} else  {
+			byte[] inflatedDataResized = new byte[inflatedSize];
+			System.arraycopy(inflatedData, 0, inflatedDataResized, 0, inflatedSize);
+			return inflatedDataResized;
+		} else  if (p.getId() == 0x38) {
+			BulkData d = (BulkData) p.getField(1);
+			int chunks = d.getChunks();
+			int maxSize = chunks * 16384 * 16;
+			byte[] inflatedData = new byte[maxSize];
+			int inflatedSize = CompressionManager.inflate(d.getChunkData(), inflatedData);
+			byte[] inflatedDataResized = new byte[inflatedSize];
+			System.arraycopy(inflatedData, 0, inflatedDataResized, 0, inflatedSize);
+			return inflatedDataResized;
+		} else {
 			return null;
+		}
+	}
+
+	@Override
+	public void setDataArray(Packet p, byte[] data) {
+		if (p.getId() == 0x33) {
+			byte[] deflatedData = new byte[data.length + 100];
+			int size = CompressionManager.deflate(data, deflatedData);
+			byte[] deflatedDataResized = new byte[size];
+			System.arraycopy(deflatedData, 0, deflatedDataResized, 0, size);
+			p.setField(6, deflatedDataResized);
+		} else if (p.getId() == 0x38) {
+			byte[] deflatedData = new byte[data.length + 100];
+			int size = CompressionManager.deflate(data, deflatedData);
+			byte[] deflatedDataResized = new byte[size];
+			System.arraycopy(deflatedData, 0, deflatedDataResized, 0, size);
+			BulkData d = (BulkData) p.getField(1);
+			d.setChunkData(deflatedDataResized);
 		}
 	}
 

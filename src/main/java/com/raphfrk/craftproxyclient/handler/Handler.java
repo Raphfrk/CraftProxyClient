@@ -51,6 +51,6 @@ import com.raphfrk.craftproxyclient.net.TransferConnection;
 
 public interface Handler<M extends SubMessage> {
 	
-	public void handle(TransferConnection connection, boolean fromServer, M m);
+	public void handle(TransferConnection connection, M m);
 
 }

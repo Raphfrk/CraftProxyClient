@@ -28,7 +28,7 @@ import org.bouncycastle.util.Arrays;
 
 public class BulkData {
 	
-	private final byte[] chunkData;
+	private byte[] chunkData;
 	private final int[] chunkX;
 	private final int[] chunkZ;
 	private final short[] bitmap;
@@ -52,6 +52,10 @@ public class BulkData {
 
 	public byte[] getChunkData() {
 		return chunkData;
+	}
+	
+	public void setChunkData(byte[] data) {
+		this.chunkData = data;
 	}
 	
 	public int getChunkX(int i) {

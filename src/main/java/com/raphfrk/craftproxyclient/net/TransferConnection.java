@@ -29,8 +29,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.raphfrk.craftproxyclient.handler.HandlerManager;
 import com.raphfrk.craftproxyclient.message.InitMessage;
 import com.raphfrk.craftproxyclient.message.MessageManager;
+import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
@@ -42,13 +44,16 @@ public class TransferConnection extends Thread {
 	private final Protocol protocol;
 	private final ReentrantLock outLock = new ReentrantLock();
 	private final ConcurrentLinkedQueue<Packet> sendQueue = new ConcurrentLinkedQueue<Packet>();
+	private final ConnectionManager manager;
 	private TransferConnection other;
 	private AtomicBoolean running = new AtomicBoolean(true);
 	
-	public TransferConnection(Protocol protocol, PacketChannel in, PacketChannel out) {
+	public TransferConnection(String type, Protocol protocol, PacketChannel in, PacketChannel out) {
+		super("TransferConnection " + type);
 		this.protocol = protocol;
 		this.in = in;
 		this.out = out;
+		this.manager = new ConnectionManager();
 	}
 	
 	public void setOther(TransferConnection other) {
@@ -56,6 +61,7 @@ public class TransferConnection extends Thread {
 	}
 	
 	public void run() {
+		boolean caching = false;
 		LinkedList<Integer> ids = new LinkedList<Integer>();
 		while (!interrupted()) {
 			try {
@@ -68,7 +74,6 @@ public class TransferConnection extends Thread {
 					ids.removeFirst();
 				}
 				if (protocol.isMessagePacket(id)) {
-					in.mark();
 					Packet p = in.getPacket();
 					String channel = protocol.getMessageChannel(p);
 					if ("REGISTER".equals(channel)) {
@@ -78,15 +83,22 @@ public class TransferConnection extends Thread {
 							if (MessageManager.getChannelName().equals(c)) {
 								other.queuePacket(protocol.getRegisterPacket(MessageManager.getChannelName()));
 								other.queuePacket(protocol.getSubMessage(new InitMessage()));
+								caching = true;
 							}
 						}
+						out.writePacketLocked(p, outLock);
+					} else if (MessageManager.getChannelName().equals(channel)) {
+						SubMessage subMessage = protocol.getMessagePacket(p);
+						HandlerManager.handle(this, subMessage);
+					} else {
+						out.writePacketLocked(p, outLock);
 					}
-					in.reset();
-					in.discard();
-					in.transferPacketLocked(out, outLock);
-				} else if (protocol.isDataPacket(id)) {
+				} else if (caching && protocol.isDataPacket(id)) {
+					System.out.println("Processing packet " + id);
 					Packet p = in.getPacket();
 					byte[] data = protocol.getDataArray(p);
+					data = manager.process(data);
+					protocol.setDataArray(p, data);
 					out.writePacketLocked(p, outLock);
 				} else {
 					in.transferPacketLocked(out, outLock);
@@ -133,6 +145,10 @@ public class TransferConnection extends Thread {
 		while (!sendQueue.isEmpty()) {
 			out.writePacket(sendQueue.poll());
 		}
+	}
+	
+	public ConnectionManager getManager() {
+		return manager;
 	}
 
 }

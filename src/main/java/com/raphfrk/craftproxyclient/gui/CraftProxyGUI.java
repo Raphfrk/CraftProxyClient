@@ -192,6 +192,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 				});
 			}
 		});
+		t.setName("GUI Init thread");
 		t.start();
 	}
 	

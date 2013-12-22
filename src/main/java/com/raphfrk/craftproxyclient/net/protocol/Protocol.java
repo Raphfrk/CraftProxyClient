@@ -65,5 +65,7 @@ public abstract class Protocol {
 	public abstract boolean isDataPacket(int id);
 	
 	public abstract byte[] getDataArray(Packet p);
+
+	public abstract void setDataArray(Packet p, byte[] data);
 	
 }

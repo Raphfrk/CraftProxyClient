@@ -29,7 +29,7 @@ import com.raphfrk.craftproxyclient.net.TransferConnection;
 public class InitMessageHandler implements Handler<InitMessage> {
 
 	@Override
-	public void handle(TransferConnection connection, boolean fromServer, InitMessage m) {
+	public void handle(TransferConnection connection, InitMessage m) {
 	}
 
 }

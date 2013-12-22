@@ -59,7 +59,7 @@ public class HandlerManager {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static void handle(TransferConnection connection, boolean fromServer, SubMessage m) {
+	public static void handle(TransferConnection connection, SubMessage m) {
 		int id = m.getId();
 		if (id < 0) {
 			return;
@@ -69,7 +69,7 @@ public class HandlerManager {
 		
 		@SuppressWarnings("rawtypes")
 		Handler h = handlers[id];
-		h.handle(connection, fromServer, m);
+		h.handle(connection, m);
 	}
 
 }

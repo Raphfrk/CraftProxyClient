@@ -56,9 +56,6 @@ public class CompressionManager {
 		Inflater i = inflater.get();
 		i.reset();
 		i.setInput(input);
-		if (!i.finished()) {
-			return -1;
-		}
 		try {
 			int inflatedSize = i.inflate(output);
 			i.reset();
