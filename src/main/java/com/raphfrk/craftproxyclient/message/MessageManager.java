@@ -34,10 +34,15 @@ import java.util.List;
 
 public class MessageManager {
 	
-	private final static String channel = "ChunkCache";
+	private final static String CHANNEL = "ChunkCache";
+	private final static int MAGIC_INT = 0x02d0ED81;
 	
 	public static String getChannelName() {
-		return channel;
+		return CHANNEL;
+	}
+	
+	public static int getMagicInt() {
+		return MAGIC_INT;
 	}
 	
 	public static SubMessage decode(byte[] message) throws IOException {
