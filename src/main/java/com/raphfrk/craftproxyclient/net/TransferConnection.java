@@ -24,14 +24,18 @@
 package com.raphfrk.craftproxyclient.net;
 
 import java.io.IOException;
+import java.nio.channels.AsynchronousCloseException;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.raphfrk.craftproxyclient.handler.HandlerManager;
+import com.raphfrk.craftproxyclient.message.HashDataMessage;
+import com.raphfrk.craftproxyclient.message.HashRequestMessage;
 import com.raphfrk.craftproxyclient.message.InitMessage;
 import com.raphfrk.craftproxyclient.message.MessageManager;
+import com.raphfrk.craftproxyclient.message.SectionAckMessage;
 import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
@@ -46,14 +50,17 @@ public class TransferConnection extends Thread {
 	private final ConcurrentLinkedQueue<Packet> sendQueue = new ConcurrentLinkedQueue<Packet>();
 	private final ConnectionManager manager;
 	private TransferConnection other;
+	private final ConnectionListener parent;
 	private AtomicBoolean running = new AtomicBoolean(true);
+	private boolean caching = false;
 	
-	public TransferConnection(String type, Protocol protocol, PacketChannel in, PacketChannel out) {
+	public TransferConnection(String type, Protocol protocol, PacketChannel in, PacketChannel out, ConnectionManager manager, ConnectionListener parent) {
 		super("TransferConnection " + type);
 		this.protocol = protocol;
 		this.in = in;
 		this.out = out;
-		this.manager = new ConnectionManager();
+		this.parent = parent;
+		this.manager = manager;
 	}
 	
 	public void setOther(TransferConnection other) {
@@ -61,7 +68,6 @@ public class TransferConnection extends Thread {
 	}
 	
 	public void run() {
-		boolean caching = false;
 		LinkedList<Integer> ids = new LinkedList<Integer>();
 		while (!interrupted()) {
 			try {
@@ -82,24 +88,59 @@ public class TransferConnection extends Thread {
 						for (String c : channels) {
 							if (MessageManager.getChannelName().equals(c)) {
 								other.queuePacket(protocol.getRegisterPacket(MessageManager.getChannelName()));
-								other.queuePacket(protocol.getSubMessage(new InitMessage()));
-								caching = true;
+								other.queuePacket(protocol.convertSubMessageToPacket(new InitMessage()));
 							}
 						}
 						out.writePacketLocked(p, outLock);
 					} else if (MessageManager.getChannelName().equals(channel)) {
-						SubMessage subMessage = protocol.getMessagePacket(p);
+						SubMessage subMessage = protocol.convertPacketToSubMessage(p);
 						HandlerManager.handle(this, subMessage);
 					} else {
 						out.writePacketLocked(p, outLock);
 					}
-				} else if (caching && protocol.isDataPacket(id)) {
-					System.out.println("Processing packet " + id);
+				} else if (caching && manager != null && protocol.isDataPacket(id)) {
 					Packet p = in.getPacket();
 					byte[] data = protocol.getDataArray(p);
 					data = manager.process(data);
+					if (data == null) {
+						in.mark();
+						try {
+							int pos = 0;
+							long[] unknowns = manager.getUnknowns();
+							while (pos < unknowns.length) {
+								int len = Math.min(64, unknowns.length - pos);
+								HashRequestMessage request = new HashRequestMessage(unknowns, pos, len);
+								other.queuePacket(protocol.convertSubMessageToPacket(request));
+								pos += len;
+							}
+							while (manager.hasUnknowns()) {
+								int id2 = in.getPacketId();
+								if (protocol.isMessagePacket(id2)) {
+									Packet p2 = in.getPacket();
+									String channel = protocol.getMessageChannel(p2);
+									if (MessageManager.getChannelName().equals(channel)) {
+										SubMessage subMessage = protocol.convertPacketToSubMessage(p2);
+										if (subMessage instanceof HashDataMessage) {
+											HandlerManager.handle(this, subMessage);
+										}
+									}
+								} else {
+									in.skipPacket();
+								}
+							}
+						} finally {
+							in.reset();
+							in.discard();
+						}
+					}
+					data = protocol.getDataArray(p);
+					data = manager.process(data);
+					if (data == null) {
+						throw new IOException("Unable to process packet even after all unknowns were filled");
+					}
 					protocol.setDataArray(p, data);
 					out.writePacketLocked(p, outLock);
+					other.queuePacket(protocol.convertSubMessageToPacket(new SectionAckMessage(manager.getSectionIds())));
 				} else {
 					in.transferPacketLocked(out, outLock);
 				}
@@ -114,6 +155,8 @@ public class TransferConnection extends Thread {
 				if (in.getPacketId() == 0xFF) {
 					break;
 				}
+			} catch (AsynchronousCloseException e) {
+				break;
 			} catch (IOException e) {
 				break;
 			}
@@ -135,12 +178,6 @@ public class TransferConnection extends Thread {
 		}
 	}
 	
-	public void interrupt() {
-		System.out.println("transfer connection interrupted");
-		queuePacket(protocol.getKick("Proxy server halted"));
-		running.set(false);
-	}
-	
 	private void flushPacketQueue() throws IOException {
 		while (!sendQueue.isEmpty()) {
 			out.writePacket(sendQueue.poll());
@@ -149,6 +186,10 @@ public class TransferConnection extends Thread {
 	
 	public ConnectionManager getManager() {
 		return manager;
+	}
+	
+	public void setCaching() {
+		caching = true;
 	}
 
 }

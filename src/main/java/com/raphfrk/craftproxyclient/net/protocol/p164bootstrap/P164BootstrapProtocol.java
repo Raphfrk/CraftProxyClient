@@ -72,7 +72,7 @@ public class P164BootstrapProtocol extends Protocol {
 	}
 
 	@Override
-	public Packet getSubMessage(SubMessage s) {
+	public Packet convertSubMessageToPacket(SubMessage s) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -107,7 +107,7 @@ public class P164BootstrapProtocol extends Protocol {
 	}
 
 	@Override
-	public SubMessage getMessagePacket(Packet p) {
+	public SubMessage convertPacketToSubMessage(Packet p) {
 		throw new UnsupportedOperationException();
 	}
 

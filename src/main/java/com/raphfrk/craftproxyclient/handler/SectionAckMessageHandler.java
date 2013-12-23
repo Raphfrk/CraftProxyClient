@@ -23,15 +23,7 @@
  */
 package com.raphfrk.craftproxyclient.handler;
 
-import com.raphfrk.craftproxyclient.message.InitMessage;
-import com.raphfrk.craftproxyclient.net.TransferConnection;
+import com.raphfrk.craftproxyclient.message.HashDataMessage;
 
-public class InitMessageHandler extends Handler<InitMessage> {
-	
-	@Override
-	public void handle(TransferConnection connection, InitMessage m) {
-		System.out.println("Starting caching");
-		connection.setCaching();
-	}
-	
+public class SectionAckMessageHandler extends Handler<HashDataMessage> {
 }

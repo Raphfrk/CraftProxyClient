@@ -42,25 +42,35 @@ public class CompressionManager {
 	};
 	
 	public static int deflate(byte[] input, byte[] output) {
+		return deflate(input, output, 0, output.length);
+	}
+	
+	public static int deflate(byte[] input, byte[] output, int off, int len) {
 		Deflater d = deflater.get();
 		d.reset();
 		d.setInput(input);
 		d.finish();
 		
-		int deflatedSize = d.deflate(output);
+		int deflatedSize = d.deflate(output, off, len);
 		d.reset();
 		return deflatedSize;
 	}
 	
 	public static int inflate(byte[] input, byte[] output) {
+		return inflate(input, 0, input.length, output);
+	}
+	
+	public static int inflate(byte[] input, int inOff, int inLen, byte[] output) {
 		Inflater i = inflater.get();
 		i.reset();
-		i.setInput(input);
+		i.setInput(input, inOff, inLen);
+		i.finished();
 		try {
 			int inflatedSize = i.inflate(output);
 			i.reset();
 			return inflatedSize;
 		} catch (DataFormatException e) {
+			e.printStackTrace();
 			return -1;
 		}
 	}

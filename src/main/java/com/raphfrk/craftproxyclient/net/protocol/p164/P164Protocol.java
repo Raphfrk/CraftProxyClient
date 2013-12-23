@@ -41,11 +41,14 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
-import org.bouncycastle.util.encoders.Hex;
 
 import com.raphfrk.craftproxyclient.crypt.Crypt;
+import com.raphfrk.craftproxyclient.hash.Hash;
+import com.raphfrk.craftproxyclient.message.HashDataMessage;
+import com.raphfrk.craftproxyclient.message.HashRequestMessage;
+import com.raphfrk.craftproxyclient.message.InitMessage;
 import com.raphfrk.craftproxyclient.message.MessageManager;
+import com.raphfrk.craftproxyclient.message.SectionAckMessage;
 import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.CryptByteChannelWrapper;
 import com.raphfrk.craftproxyclient.net.auth.AuthManager;
@@ -135,11 +138,11 @@ public class P164Protocol extends Protocol {
 	
 	@Override
 	public void sendSubMessage(SubMessage message, PacketChannel client) throws IOException {
-		client.writePacket(getSubMessage(message));
+		client.writePacket(convertSubMessageToPacket(message));
 	}
 	
 	@Override
-	public Packet getSubMessage(SubMessage message) throws IOException {
+	public Packet convertSubMessageToPacket(SubMessage message) throws IOException {
 		return new Packet(0xFA, new Object[] {(byte) 0xFA, MessageManager.getChannelName(), MessageManager.encode(message.getSubCommand(), message.getData())});
 	}
 	
@@ -242,8 +245,13 @@ public class P164Protocol extends Protocol {
 	}
 
 	@Override
-	public SubMessage getMessagePacket(Packet p) {
-		throw new UnsupportedOperationException();
+	public SubMessage convertPacketToSubMessage(Packet p) throws IOException {
+		String channel = (String) p.getField(1);
+		if (!channel.equals(MessageManager.getChannelName())) {
+			throw new IOException("Incorrect channel name " + channel);
+		}
+		byte[] data = (byte[]) p.getField(2);
+		return MessageManager.decode(data);
 	}
 
 	@Override

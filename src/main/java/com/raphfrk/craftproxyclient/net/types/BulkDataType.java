@@ -44,7 +44,6 @@ public class BulkDataType extends Type<BulkData> {
 			}
 			return true;
 		} else {
-			System.out.println("failed to write bulk");
 			return false;
 		}
 	}

@@ -370,13 +370,6 @@ public class PacketChannel {
 			setReading();
 		}
 	}
-	
-	private static void printBuffer(ByteBuffer buf) {
-		byte[] temp = new byte[buf.capacity()];
-		for (int i = 0; i < buf.capacity(); i++) {
-			temp[i] = buf.get(i);
-		}
-	}
 
 	private void setWriting() {
 		read = buf.position();

@@ -131,8 +131,8 @@ public class ConnectionListener extends Thread {
 						gui.setStatus("Login completed", "Protocol: " + protocol.getName());
 
 						try {
-							serverToClient = new TransferConnection("Server to client", protocol, server, client);
-							clientToServer = new TransferConnection("Client to server", protocol, client, server);
+							serverToClient = new TransferConnection("Server to client", protocol, server, client, new ConnectionManager(), this);
+							clientToServer = new TransferConnection("Client to server", protocol, client, server, null, this);
 
 							serverToClient.setOther(clientToServer);
 							clientToServer.setOther(serverToClient);
@@ -165,5 +165,10 @@ public class ConnectionListener extends Thread {
 			}
 			gui.setDone();
 		}
+	}
+	
+	public void interrupt(String message) {
+		gui.setStatus("IO error, " + message);
+		super.interrupt();
 	}
 }

@@ -54,9 +54,19 @@ public class MessageManager {
 		
 		if (InitMessage.getSubCommandRaw().equals(subCommand)) {
 			return new InitMessage(data);
+		} else if (HashRequestMessage.getSubCommandRaw().equals(subCommand)) {
+			return new HashRequestMessage(data);
+		} else if (HashDataMessage.getSubCommandRaw().equals(subCommand)) {
+			return new HashDataMessage(data);
+		} else if (SectionAckMessage.getSubCommandRaw().equals(subCommand)) {
+			return new SectionAckMessage(data);
 		} else {
 			return null;
 		}
+	}
+	
+	public static byte[] encode(SubMessage message) throws IOException {
+		return encode(message.getSubCommand(), message.getData());
 	}
 	
 	public static byte[] encode(String subCommand, byte[] data) throws IOException {

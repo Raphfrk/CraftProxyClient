@@ -72,6 +72,8 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	private final List<String> infoLines = new ArrayList<String>();
 
 	private String buttonText = "Logging in";
+	
+	private boolean closed = false;
 
 	private final PropertiesFile pf;
 	
@@ -185,7 +187,11 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 							connect.setText("Start");
 							setStatus("Logged in as " + AuthManager.getUsername());	
 							if (!"".equals(serverName.getText())) {
-								startProxyServer();
+								if (!closed) {
+									startProxyServer();
+								} else {
+									dispose();
+								}
 							}
 						}
 					}
@@ -266,6 +272,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	}
 
 	public void windowClosing(WindowEvent paramWindowEvent) {
+		closed = true;
 		if (connectionListener != null) {
 			connectionListener.interrupt();
 		}

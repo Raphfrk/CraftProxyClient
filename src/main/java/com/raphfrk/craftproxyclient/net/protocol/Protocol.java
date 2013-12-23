@@ -40,7 +40,7 @@ public abstract class Protocol {
 		return registry;
 	}
 	
-	public abstract Packet getSubMessage(SubMessage s) throws IOException;
+	public abstract Packet convertSubMessageToPacket(SubMessage s) throws IOException;
 	
 	public abstract void sendSubMessage(SubMessage s, PacketChannel client) throws IOException;
 	
@@ -58,7 +58,7 @@ public abstract class Protocol {
 	
 	public abstract byte[] getMessageData(Packet p);
 	
-	public abstract SubMessage getMessagePacket(Packet p);
+	public abstract SubMessage convertPacketToSubMessage(Packet p) throws IOException;
 	
 	public abstract Packet getRegisterPacket(String channel);
 	

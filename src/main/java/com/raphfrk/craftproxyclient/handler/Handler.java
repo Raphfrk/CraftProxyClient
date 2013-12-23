@@ -46,11 +46,15 @@
  */
 package com.raphfrk.craftproxyclient.handler;
 
+import java.io.IOException;
+
 import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.TransferConnection;
 
-public interface Handler<M extends SubMessage> {
+public abstract class Handler<M extends SubMessage> {
 	
-	public void handle(TransferConnection connection, M m);
+	public void handle(TransferConnection connection, M m) throws IOException {
+		throw new IOException("Unexpected message " + m.getClass().getName() + " received");
+	}
 
 }

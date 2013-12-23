@@ -46,20 +46,25 @@
  */
 package com.raphfrk.craftproxyclient.handler;
 
+import java.io.IOException;
+
 import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.TransferConnection;
 
 public class HandlerManager {
 	
 	@SuppressWarnings("rawtypes")
-	private final static Handler[] handlers = new Handler[1];
+	private final static Handler[] handlers = new Handler[4];
 	
 	static {
 		handlers[0] = new InitMessageHandler();
+		handlers[1] = new HashRequestMessageHandler();
+		handlers[2] = new HashDataMessageHandler();
+		handlers[3] = new SectionAckMessageHandler();
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static void handle(TransferConnection connection, SubMessage m) {
+	public static void handle(TransferConnection connection, SubMessage m) throws IOException {
 		int id = m.getId();
 		if (id < 0) {
 			return;
