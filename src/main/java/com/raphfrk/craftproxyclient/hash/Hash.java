@@ -43,7 +43,8 @@ public class Hash {
 	
 	public static long hash(byte[] data, int off, int len) {
 		long h = len + len << 16;
-		for (byte b : data) {
+		for (int i = off; i < off + len; i++) {
+			byte b = data[i];
 			h += Long.rotateRight(h, 5) + (b & 0xFF);
 		}
 		return h;

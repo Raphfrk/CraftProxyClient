@@ -109,8 +109,7 @@ public class TransferConnection extends Thread {
 				} else if (caching && manager != null && protocol.isDataPacket(id)) {
 					Packet p = in.getPacket();
 					byte[] data = protocol.getDataArray(p);
-					data = manager.process(data);
-					if (data == null) {
+					if (!manager.scanHashes(data)) {
 						in.mark();
 						try {
 							int pos = 0;
@@ -129,7 +128,6 @@ public class TransferConnection extends Thread {
 									if (MessageManager.getChannelName().equals(channel)) {
 										SubMessage subMessage = protocol.convertPacketToSubMessage(p2);
 										if (subMessage instanceof HashDataMessage) {
-											HashDataMessage dm = (HashDataMessage) subMessage;
 											HandlerManager.handle(this, subMessage);
 										}
 									}
@@ -142,8 +140,7 @@ public class TransferConnection extends Thread {
 							in.discard();
 						}
 					}
-					data = protocol.getDataArray(p);
-					data = manager.process(data);
+					data = manager.process();
 					if (data == null) {
 						throw new IOException("Unable to process packet even after all unknowns were filled");
 					}
@@ -168,6 +165,12 @@ public class TransferConnection extends Thread {
 			} catch (AsynchronousCloseException e) {
 				break;
 			} catch (IOException e) {
+				if (getManager() != null) {
+					try {
+						out.writePacketLocked(protocol.getKick("ChunkCache: " + e.getMessage()), outLock);
+					} catch (IOException e1) {
+					}
+				}
 				break;
 			}
 		}

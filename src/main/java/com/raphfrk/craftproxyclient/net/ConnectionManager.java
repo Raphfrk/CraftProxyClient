@@ -23,12 +23,17 @@
  */
 package com.raphfrk.craftproxyclient.net;
 
+import gnu.trove.list.TIntList;
+import gnu.trove.list.TLongList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.TShortSet;
 import gnu.trove.set.hash.TLongHashSet;
 import gnu.trove.set.hash.TShortHashSet;
 
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,12 +44,14 @@ import com.raphfrk.craftproxyclient.message.MessageManager;
 
 public class ConnectionManager {
 	
-	private final TLongHashSet hashes = new TLongHashSet();
-	private final TLongHashSet newHashes = new TLongHashSet();
 	private final TLongSet unknowns = new TLongHashSet();
 	private final TLongSet requested = new TLongHashSet();
 	private final TShortSet sectionIds = new TShortHashSet();
 	private final HashStore store = new HashStore();
+	private final List<long[]> sectionHashes = new ArrayList<long[]>();
+	private final TLongList sectionCRCs = new TLongArrayList();
+	private final TIntList sectionLengths = new TIntArrayList();
+	private int decodedLength = 0;
 	
 	public boolean addHash(Hash hash) {
 		store.add(hash);
@@ -68,39 +75,42 @@ public class ConnectionManager {
 		return sectionIds.toArray();
 	}
 	
-	public byte[] process(byte[] data) throws IOException {
+	public boolean scanHashes(byte[] data) throws IOException {
+		
 		ByteBuffer buf = ByteBuffer.wrap(data);
 
 		unknowns.clear();
 		sectionIds.clear();
-		newHashes.clear();
-		List<byte[]> sections = new ArrayList<byte[]>();
-		int len = 0;
-		boolean success = true;
+
+		sectionHashes.clear();
+		sectionCRCs.clear();
+		sectionLengths.clear();
+		
+		decodedLength = 0;
+
 		while (buf.hasRemaining()) {
-			byte[] section = decodeSection(buf, success);
-			if (section == null) {
-				success = false;
-			} else {
-				len += section.length;
-				sections.add(section);
-			}
+			decodedLength += getSectionHashes(buf);
 		}
-		if (!success) {
-			return null;
-		}
-		byte[] decoded = new byte[len];
-		int pos = 0;
-		for (byte[] section : sections) {
-			System.arraycopy(section, 0, decoded, pos, section.length);
-			pos += section.length;
+		
+		return unknowns.isEmpty();
+		
+	}
+	
+	public byte[] process() throws IOException {
+
+		byte[] decoded = new byte[decodedLength];
+		ByteBuffer buf = ByteBuffer.wrap(decoded);
+		
+		int sectionCount = sectionHashes.size();
+		for (int i = 0; i < sectionCount; i++) {
+			writeSection(buf, i);
 		}
 
 		return decoded;
 		
 	}
 	
-	private byte[] decodeSection(ByteBuffer buf, boolean success) throws IOException {
+	private int getSectionHashes(ByteBuffer buf) throws IOException {
 		int magic = buf.getInt();
 		if (magic != MessageManager.getMagicInt()) {
 			throw new IOException("Incorrect magic pattern when decoding cached data " + Integer.toHexString(magic));
@@ -126,39 +136,47 @@ public class ConnectionManager {
 		
 		long sectionCRC = buf.getLong();
 		
-		if (unknowns.size() > 0) {
-			return null;
-		}
-		
-		if (!success) {
-			// no point in decoding
-			return null;
-		}
-		
+		sectionHashes.add(hashes);
+		sectionCRCs.add(sectionCRC);
+		sectionLengths.add(length);
 		sectionIds.add(sectionId);
+		
+		return length; 
+	}
+	
+	public void writeSection(ByteBuffer buf, int sectionIndex) throws IOException {
+		
+		if (unknowns.size() > 0) {
+			throw new IOException("All unknowns were not found");
+		}
 
-		byte[] section = new byte[length];
-
-		int pos = 0;
+		long[] hashes = sectionHashes.get(sectionIndex);
+		
+		int start = buf.position();
+		
 		for (int i = 0; i < hashes.length; i++) {
 			Hash h = store.get(hashes[i]);
-
-			int len = h.copy(section, pos);
-
-			if (len == -1) {
-				throw new IOException("Section length error");
+			if (h == null) {
+				throw new IOException("Unable to find hash "+ hashes[i]);
 			}
-			pos += len;
+			try {
+				h.put(buf);
+			} catch (BufferOverflowException e) {
+				throw new IOException("Unable write hash "+ hashes[i], e);
+			}
 		}
 		
-		long crc = Hash.hash(section);
+		int end = buf.position();
 		
-		if (crc != sectionCRC) {
-			throw new IOException("Section CRC mismatch with cache");
+		if (end - start != sectionLengths.get(sectionIndex)) {
+			throw new IOException("Unexpected section length " + (end - start));
 		}
 		
-		return section;
+		long crc = Hash.hash(buf.array(), start, end - start);
 		
+		if (crc != sectionCRCs.get(sectionIndex)) {
+			throw new IOException("Section CRC mismatch with cache " + crc + " " + sectionCRCs.get(sectionIndex));
+		}		
 	}
 	
 	private long getHash(ByteBuffer buf) throws IOException {
