@@ -28,6 +28,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
@@ -44,6 +45,10 @@ public class ConnectionListener extends Thread {
 	private final InetSocketAddress serverAddr;
 	private final InetSocketAddress localAddr;
 	private final CraftProxyGUI gui;
+	private final AtomicInteger serverDataIn = new AtomicInteger();
+	private final AtomicInteger serverDataOut = new AtomicInteger();
+	private final AtomicInteger clientDataIn = new AtomicInteger();
+	private final AtomicInteger clientDataOut = new AtomicInteger();
 
 	private final P164BootstrapProtocol p164Bootstrap = new P164BootstrapProtocol();
 
@@ -72,7 +77,7 @@ public class ConnectionListener extends Thread {
 				Protocol protocol = null;
 				PacketChannel client = null;
 				try {
-					client = new PacketChannel(c, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+					client = new PacketChannel(c, clientDataIn, clientDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 					try {
 						int id = client.getPacketId();
 
@@ -117,7 +122,7 @@ public class ConnectionListener extends Thread {
 
 						PacketChannel server = null;
 						try {
-							server = new PacketChannel(s, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+							server = new PacketChannel(s, serverDataIn, serverDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 							server.setRegistry(protocol.getPacketRegistry());
 							protocol.handleLogin(handshake, client, server, serverAddr);
 						} catch (IOException e) {
@@ -165,6 +170,14 @@ public class ConnectionListener extends Thread {
 			}
 			gui.setDone();
 		}
+	}
+	
+	public void updateGUIBandwidth() {
+		int server = serverDataIn.get() + serverDataOut.get();
+		int client = clientDataIn.get() + clientDataOut.get();
+		int comp = ((100 * client) / server) - 100;
+		String text = "Bandwidth down " + (serverDataIn.get() / 1024) + "kB, up " + (serverDataOut.get() / 1024) + "kB (" + comp + "% compression)";
+		gui.setStatusReplace("Bandwidth", text);
 	}
 	
 	public void interrupt(String message) {

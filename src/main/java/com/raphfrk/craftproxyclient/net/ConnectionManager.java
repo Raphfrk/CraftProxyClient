@@ -42,6 +42,7 @@ public class ConnectionManager {
 	private final TLongHashSet hashes = new TLongHashSet();
 	private final TLongHashSet newHashes = new TLongHashSet();
 	private final TLongSet unknowns = new TLongHashSet();
+	private final TLongSet requested = new TLongHashSet();
 	private final TShortSet sectionIds = new TShortHashSet();
 	private final HashStore store = new HashStore();
 	
@@ -116,7 +117,9 @@ public class ConnectionManager {
 		for (int i = 0; i < hashCount; i++) {
 			long hash = getHash(buf);
 			if (!store.hasKey(hash)) {
-				unknowns.add(hash);
+				if (requested.add(hash)) {
+					unknowns.add(hash);
+				}
 			}
 			hashes[i] = hash;
 		}

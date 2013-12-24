@@ -74,6 +74,10 @@ public class Packet {
 		return this.arr;
 	}
 	
+	public int getLength() {
+		return this.arr.length;
+	}
+	
 	public String toString() {
 		StringBuilder sb = new StringBuilder(getClass().getSimpleName() + "{");
 		boolean first = true;

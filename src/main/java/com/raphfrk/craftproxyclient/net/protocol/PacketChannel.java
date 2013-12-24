@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
 import com.raphfrk.craftproxyclient.net.SingleByteByteChannelWrapper;
@@ -43,25 +44,37 @@ public class PacketChannel {
 	private final ByteBuffer buf;
 	private final ByteBuffer writeBuf;
 	private PacketRegistry registry;
+	private final AtomicInteger dataIn;
+	private final AtomicInteger dataOut;
 	
 	private int id = -1;
 	private int read = 0;
 	private int mark = -1;
 	private int packetStart = -1;
 	
-	public PacketChannel(ByteChannel channel, int readBufferSize) {
-		this(channel, readBufferSize, 0);
+	public PacketChannel(ByteChannel channel, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize) {
+		this(channel, dataIn, dataOut, readBufferSize, 0);
 	}
 	
-	public PacketChannel(ByteChannel channel, int readBufferSize, int writeBufferSize) {
-		this(channel, readBufferSize, writeBufferSize, null);
+	public PacketChannel(ByteChannel channel, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize, int writeBufferSize) {
+		this(channel, dataIn, dataOut, readBufferSize, writeBufferSize, null);
 	}
 	
 	public PacketChannel(ByteChannel channel, int readBufferSize, PacketRegistry registry) {
 		this(channel, readBufferSize, 0, registry);
 	}
 	
+	public PacketChannel(ByteChannel channel, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize, PacketRegistry registry) {
+		this(channel, dataIn, dataOut, readBufferSize, 0, registry);
+	}
+	
 	public PacketChannel(ByteChannel channel, int readBufferSize, int writeBufferSize, PacketRegistry registry) {
+		this(channel, new AtomicInteger(), new AtomicInteger(), readBufferSize, writeBufferSize, registry);
+	}
+	
+	public PacketChannel(ByteChannel channel, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize, int writeBufferSize, PacketRegistry registry) {
+		this.dataIn = dataIn;
+		this.dataOut = dataOut;
 		this.rawChannel = channel;
 		this.channel = new SingleByteByteChannelWrapper(this.rawChannel);
 		this.buf = ByteBuffer.allocateDirect(readBufferSize);
@@ -124,6 +137,7 @@ public class PacketChannel {
 			totalLength += length;
 		}
 		Packet packet = registry.getPacket(id, values, buf, packetStart, totalLength);
+		dataIn.addAndGet(totalLength);
 		id = -1;
 		return packet;
 	}
@@ -147,6 +161,8 @@ public class PacketChannel {
 		}
 
 		writeBuf.flip();
+		
+		dataOut.addAndGet(writeBuf.remaining());
 	
 		while (writeBuf.hasRemaining()) {
 			channel.write(writeBuf);
@@ -186,7 +202,7 @@ public class PacketChannel {
 	 * @throws IOException
 	 */
 	public void transferPacket(PacketChannel channel) throws IOException {
-		transferPacket(channel.channel);
+		transferPacket(channel, channel.channel);
 	}
 	
 	/**
@@ -198,7 +214,7 @@ public class PacketChannel {
 	public void transferPacketLocked(PacketChannel channel, Lock l) throws IOException {
 		l.lock();
 		try {
-			transferPacket(channel.channel);
+			transferPacket(channel);
 		} finally {
 			l.unlock();
 		}
@@ -211,6 +227,10 @@ public class PacketChannel {
 	 * @throws IOException
 	 */
 	public void transferPacket(WritableByteChannel channel) throws IOException {
+		transferPacket(null, channel);
+	}
+	
+	private void transferPacket(PacketChannel packetChannel, WritableByteChannel channel) throws IOException {
 		packetStart = buf.position();
 		getPacketId();
 		@SuppressWarnings("rawtypes")
@@ -222,6 +242,12 @@ public class PacketChannel {
 
 		for (int i = 0; i < types.length; i++) {
 			int length = hardGetLength(types[i]);
+			dataIn.addAndGet(length);
+			if (packetChannel != null) {
+				packetChannel.dataOut.addAndGet(length);
+			} else {
+				System.out.println("Unable to update bandwidth");
+			}
 			limit = buf.limit();
 			while (length > 0) {
 				int newLimit = buf.position() + length;
@@ -256,6 +282,7 @@ public class PacketChannel {
 
 		for (int i = 0; i < types.length; i++) {
 			int length = hardGetLength(types[i]);
+			dataIn.addAndGet(length);
 			if (buf.remaining() < length) {
 				readBytesToBuffer(length - buf.remaining());
 			}
@@ -310,7 +337,15 @@ public class PacketChannel {
 			throw new IllegalStateException("Cannot discard since no mark set");
 		}
 		id = -1;
+		dataIn.addAndGet(mark - buf.position());
 		buf.position(mark);
+	}
+	
+	/**
+	 * Get total bandwidth
+	 */
+	public int getBandwidthUsage() {
+		return dataIn.get() + dataOut.get();
 	}
 	
 	private int hardGetLength(Type<?> type) throws IOException {

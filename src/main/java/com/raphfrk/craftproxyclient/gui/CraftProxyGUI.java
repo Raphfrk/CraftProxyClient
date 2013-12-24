@@ -32,7 +32,6 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -54,6 +53,8 @@ import com.raphfrk.craftproxyclient.net.auth.AuthManager;
 public class CraftProxyGUI extends JFrame implements WindowListener, ActionListener {
 	
 	private static final long serialVersionUID = 1L;
+	
+	private static final int STATUS_LINES = 6;
 
 	private final JPanel topPanel = new JPanel();
 	private final JPanel secondPanel = new JPanel();
@@ -238,35 +239,63 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 		updateStatus();
 	}
 	
+	public void setStatusReplace(final String begin, final String text) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				processInfoQueue();
+				if (infoLines.isEmpty()) {
+					setStatus(text);
+					return;
+				}
+				int lastIndex = infoLines.size() - 1;
+				String last = infoLines.get(lastIndex);
+				if (last.startsWith(begin)) {
+					infoLines.set(lastIndex, text);
+					commitInfoLines();
+				} else {
+					setStatus(text);
+				}
+			}
+		});
+	}
+	
 	private void updateStatus() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				int lines = 6;
 				if (infoQueue.isEmpty()) {
 					return;
 				}
-				while (!infoQueue.isEmpty()) {
-					String s = infoQueue.poll();
-					infoLines.add(s);
-					if (infoLines.size() > lines) {
-						infoLines.remove(0);
-					}
-				}
-				StringBuilder sb = new StringBuilder("<html>");
-				boolean first = true;
-				for (int i = 0; i < lines; i++) {
-					String line = i >= infoLines.size() ? "&nbsp" : infoLines.get(i);
-					if (!first) {
-						sb.append("<br>");
-					} else {
-						first = false;
-					}
-					sb.append(line);
-				}
-				sb.append("</html>");
-				info.setText(sb.toString());
+				processInfoQueue();
+				commitInfoLines();
 			}
 		});
+	}
+	
+	private void processInfoQueue() {
+
+		while (!infoQueue.isEmpty()) {
+			String s = infoQueue.poll();
+			infoLines.add(s);
+			if (infoLines.size() > STATUS_LINES) {
+				infoLines.remove(0);
+			}
+		}
+	}
+	
+	private void commitInfoLines() {
+		StringBuilder sb = new StringBuilder("<html>");
+		boolean first = true;
+		for (int i = 0; i < STATUS_LINES; i++) {
+			String line = i >= infoLines.size() ? "&nbsp" : infoLines.get(i);
+			if (!first) {
+				sb.append("<br>");
+			} else {
+				first = false;
+			}
+			sb.append(line);
+		}
+		sb.append("</html>");
+		info.setText(sb.toString());
 	}
 	
 	public void safeSetFileSize(final String text) {

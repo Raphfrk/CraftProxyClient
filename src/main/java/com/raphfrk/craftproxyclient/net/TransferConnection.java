@@ -68,11 +68,19 @@ public class TransferConnection extends Thread {
 	}
 	
 	public void run() {
+		int lastUsage = 0;
+		long lastUpdateTime = 0;
 		LinkedList<Integer> ids = new LinkedList<Integer>();
 		while (!interrupted()) {
 			try {
 				if (!running.get()) {
 					break;
+				}
+				int bandwidth = in.getBandwidthUsage();
+				if (bandwidth > 1024 + lastUsage && System.currentTimeMillis() > 250 + lastUpdateTime) {
+					lastUsage = bandwidth;
+					lastUpdateTime = System.currentTimeMillis();
+					parent.updateGUIBandwidth();
 				}
 				int id = in.getPacketId();
 				ids.add(id);
@@ -121,6 +129,7 @@ public class TransferConnection extends Thread {
 									if (MessageManager.getChannelName().equals(channel)) {
 										SubMessage subMessage = protocol.convertPacketToSubMessage(p2);
 										if (subMessage instanceof HashDataMessage) {
+											HashDataMessage dm = (HashDataMessage) subMessage;
 											HandlerManager.handle(this, subMessage);
 										}
 									}
