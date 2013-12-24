@@ -132,6 +132,11 @@ public class P164Protocol extends Protocol {
 	}
 	
 	@Override
+	public boolean isKickMessage(int id) {
+		return id == 0xFF;
+	}
+	
+	@Override
 	public Packet getKick(String message) {
 		return new P164Kick(message);
 	}

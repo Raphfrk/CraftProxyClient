@@ -138,7 +138,6 @@ public class PacketChannel {
 	public void writePacket(Packet p) throws IOException {
 		@SuppressWarnings("rawtypes")
 		Type[] types = registry.getPacketInfo(p.getId());
-		
 		writeBuf.clear();
 
 		for (int i = 0; i < types.length; i++) {

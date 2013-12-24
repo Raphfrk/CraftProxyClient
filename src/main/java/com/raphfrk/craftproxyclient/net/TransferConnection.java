@@ -152,7 +152,8 @@ public class TransferConnection extends Thread {
 						outLock.lock();
 					}
 				}
-				if (in.getPacketId() == 0xFF) {
+				if (protocol.isKickMessage(in.getPacketId())) {
+					in.transferPacketLocked(out, outLock);
 					break;
 				}
 			} catch (AsynchronousCloseException e) {

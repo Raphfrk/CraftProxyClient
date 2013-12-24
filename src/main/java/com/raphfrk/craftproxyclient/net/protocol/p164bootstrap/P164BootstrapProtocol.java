@@ -90,6 +90,11 @@ public class P164BootstrapProtocol extends Protocol {
 	public void sendKick(String message, PacketChannel client) throws IOException {
 		throw new UnsupportedOperationException();
 	}
+	
+	@Override
+	public boolean isKickMessage(int id) {
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
 	public Packet getKick(String message) {

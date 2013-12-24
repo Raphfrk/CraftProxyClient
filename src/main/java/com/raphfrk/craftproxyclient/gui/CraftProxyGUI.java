@@ -86,12 +86,19 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 		try {
 			pf.load();
 		} catch (IOException e) {
+			JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to open settings file");
 		}
 		
 		String defaultHostname = pf.getString("connect_hostname", "");
 		int defaultPort = pf.getInt("connect_port", 20000);
 		int listenPort = pf.getInt("listen_port", 25565);
 		int desired = pf.getInt("cache_size", 48);
+		
+		try {
+			pf.save();
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to save settings file");
+		}
 
 		setTitle("CraftProxyClient Local");
 		setSize(500,375);
