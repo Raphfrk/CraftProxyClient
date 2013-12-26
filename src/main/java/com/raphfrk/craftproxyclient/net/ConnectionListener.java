@@ -175,7 +175,7 @@ public class ConnectionListener extends Thread {
 	public void updateGUIBandwidth() {
 		int server = serverDataIn.get() + serverDataOut.get();
 		int client = clientDataIn.get() + clientDataOut.get();
-		int comp = ((100 * client) / server) - 100;
+		int comp = 100 - ((100 * server) / client);
 		String text = "Bandwidth down " + (serverDataIn.get() / 1024) + "kB, up " + (serverDataOut.get() / 1024) + "kB (" + comp + "% compression)";
 		gui.setStatusReplace("Bandwidth", text);
 	}

@@ -40,6 +40,7 @@ import java.util.List;
 
 import com.raphfrk.craftproxyclient.hash.Hash;
 import com.raphfrk.craftproxyclient.hash.HashStore;
+import com.raphfrk.craftproxyclient.hash.tree.HashTreeSet;
 import com.raphfrk.craftproxyclient.message.MessageManager;
 
 public class ConnectionManager {
@@ -51,6 +52,7 @@ public class ConnectionManager {
 	private final List<long[]> sectionHashes = new ArrayList<long[]>();
 	private final TLongList sectionCRCs = new TLongArrayList();
 	private final TIntList sectionLengths = new TIntArrayList();
+	private final HashTreeSet hashSet = new HashTreeSet();
 	private int decodedLength = 0;
 	
 	public boolean addHash(Hash hash) {
@@ -125,7 +127,7 @@ public class ConnectionManager {
 		long[] hashes = new long[hashCount];
 		
 		for (int i = 0; i < hashCount; i++) {
-			long hash = getHash(buf);
+			long hash = hashSet.readHash(buf);
 			if (!store.hasKey(hash)) {
 				if (requested.add(hash)) {
 					unknowns.add(hash);
@@ -179,13 +181,4 @@ public class ConnectionManager {
 		}		
 	}
 	
-	private long getHash(ByteBuffer buf) throws IOException {
-		byte c = buf.get();
-		if (c == 0) {
-			return buf.getLong();
-		} else {
-			throw new IOException("Unable to decode control byte " + c);
-		}
-	}
-
 }

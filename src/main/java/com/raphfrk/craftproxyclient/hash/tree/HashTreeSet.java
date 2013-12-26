@@ -23,11 +23,11 @@ public class HashTreeSet {
 		this.tree = new TreeSet<Long>();
 	}
 	
-	public boolean add(long value) {
+	protected boolean add(long value) {
 		return tree.add(value);
 	}
 	
-	public int getSize(long value) {
+	protected int getSize(long value) {
 		if (!tree.contains(value)) {
 			return -1;
 		}
