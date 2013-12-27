@@ -26,24 +26,99 @@ package com.raphfrk.craftproxyclient.hash;
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
+
+import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
+import com.raphfrk.craftproxyclient.io.HashFileStore;
+
 public class HashStore {
-	
-	private TLongObjectMap<Hash> map = new TLongObjectHashMap<Hash>();
+
+	private final TLongObjectMap<Reference<Hash>> map = new TLongObjectHashMap<Reference<Hash>>();
+	private final ReferenceQueue<Hash> refQueue = new ReferenceQueue<Hash>();
+	private final Hash[] hardList = new Hash[2048];
+	private int hardCount = 0;
+	private final HashFileStore fileStore;
+
+	public HashStore(File dirName, long capacity, CraftProxyGUI gui) throws IOException {
+		fileStore = new HashFileStore(dirName, capacity, gui);
+		fileStore.start();
+	}
 
 	public boolean hasKey(long hash) {
-		return map.containsKey(hash);
+		processQueue();
+		if (map.containsKey(hash)) {
+			return true;
+		}
+		return fileStore.hasKey(hash);
 	}
 	
-	// 512 entries per file 
-	// variable hash size?
-	// store files compressed
-	
-	public void add(Hash hash) {
-		map.put(hash.getHash(), hash);
+	public void init() throws IOException {
+		fileStore.init();
 	}
 	
-	public Hash get(long hash) {
-		return map.get(hash);
+	public void shutdown() {
+		fileStore.shutdown();
+	}
+
+	public void add(Hash hash) throws IOException {
+		processQueue();
+		try {
+			fileStore.putHash(hash);
+		} catch (InterruptedException e) {
+			throw new IOException("Unable to add hash", e);
+		}
+		map.put(hash.getHash(), new KeySoftReference(hash, refQueue));
+		hardList[(hardCount++) % hardList.length] = hash;
+	}
+
+	public Hash get(long hash) throws IOException {
+		processQueue();
+		Reference<Hash> ref = map.get(hash);
+		Hash h = null;
+		if (ref != null) {
+			h = ref.get();
+		}
+		if (h != null) {
+			return h;
+		}
+		Hash[] hashes = fileStore.readHash(hash);
+		if (hashes == null) {
+			System.out.println("Readback failed, map contains " + map.containsKey(hash));
+			System.out.println("Readback failed, fileStore contains " + fileStore.hasKey(hash));
+		}
+		for (Hash hh : hashes) {
+			if (hh.getHash() == hash) {
+				h = hh;
+			}
+			add(hh);
+		}
+		return h;
+	}
+
+	private void processQueue() {
+		KeySoftReference ref;
+		while ((ref = (KeySoftReference) refQueue.poll()) != null) {
+			map.remove(ref.getKey());
+		}
+	}
+	
+	private static class KeySoftReference extends SoftReference<Hash> {
+
+		private long key;
+		
+		public KeySoftReference(Hash hash, ReferenceQueue<Hash> queue) {
+			super(hash, queue);
+			this.key = hash.getHash();
+		}
+		
+		public long getKey() {
+			return key;
+		}
+		
 	}
 	
 }

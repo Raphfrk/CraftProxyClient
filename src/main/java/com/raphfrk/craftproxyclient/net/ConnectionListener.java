@@ -23,6 +23,7 @@
  */
 package com.raphfrk.craftproxyclient.net;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -74,6 +75,10 @@ public class ConnectionListener extends Thread {
 				} catch (IOException e) {
 					continue;
 				}
+				serverDataIn.set(0);
+				serverDataOut.set(0);
+				clientDataIn.set(0);
+				clientDataOut.set(0);
 				Protocol protocol = null;
 				PacketChannel client = null;
 				try {
@@ -135,10 +140,19 @@ public class ConnectionListener extends Thread {
 
 						gui.setStatus("Login completed", "Protocol: " + protocol.getName());
 
-						try {
-							serverToClient = new TransferConnection("Server to client", protocol, server, client, new ConnectionManager(), this);
-							clientToServer = new TransferConnection("Client to server", protocol, client, server, null, this);
+						long capacity = gui.getCapacity();
 
+						ConnectionManager manager = null;
+						
+						try {
+							manager = new ConnectionManager(new File("cache"), capacity, gui);
+							try {
+								serverToClient = new TransferConnection("Server to client", protocol, server, client, manager, this);
+								clientToServer = new TransferConnection("Client to server", protocol, client, server, null, this);
+							} catch (RuntimeException ee) {
+								ee.printStackTrace();
+								throw ee;
+							}
 							serverToClient.setOther(clientToServer);
 							clientToServer.setOther(serverToClient);
 
@@ -150,7 +164,14 @@ public class ConnectionListener extends Thread {
 						} catch (InterruptedException e) {
 							break;
 						} finally {
-							serverToClient.queuePacket(protocol.getKick("Proxy halted"));
+							if (manager != null) {
+								manager.shutdown();
+							}
+							if (serverToClient != null) {
+								serverToClient.queuePacket(protocol.getKick("Proxy halted"));
+							} else {
+								client.writePacket(protocol.getKick("Unable to start packet transfer threads"));
+							}
 							s.close();
 						}
 					} catch (IOException e) {
@@ -175,6 +196,9 @@ public class ConnectionListener extends Thread {
 	public void updateGUIBandwidth() {
 		int server = serverDataIn.get() + serverDataOut.get();
 		int client = clientDataIn.get() + clientDataOut.get();
+		if (client == 0) {
+			return;
+		}
 		int comp = 100 - ((100 * server) / client);
 		String text = "Bandwidth down " + (serverDataIn.get() / 1024) + "kB, up " + (serverDataOut.get() / 1024) + "kB (" + comp + "% compression)";
 		gui.setStatusReplace("Bandwidth", text);

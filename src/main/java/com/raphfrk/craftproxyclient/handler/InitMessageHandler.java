@@ -23,14 +23,15 @@
  */
 package com.raphfrk.craftproxyclient.handler;
 
+import java.io.IOException;
+
 import com.raphfrk.craftproxyclient.message.InitMessage;
 import com.raphfrk.craftproxyclient.net.TransferConnection;
 
 public class InitMessageHandler extends Handler<InitMessage> {
 	
 	@Override
-	public void handle(TransferConnection connection, InitMessage m) {
-		System.out.println("Starting caching");
+	public void handle(TransferConnection connection, InitMessage m) throws IOException {
 		connection.setCaching();
 	}
 	

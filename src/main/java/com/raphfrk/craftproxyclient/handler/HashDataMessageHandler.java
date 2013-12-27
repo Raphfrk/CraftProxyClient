@@ -23,6 +23,8 @@
  */
 package com.raphfrk.craftproxyclient.handler;
 
+import java.io.IOException;
+
 import com.raphfrk.craftproxyclient.hash.Hash;
 import com.raphfrk.craftproxyclient.message.HashDataMessage;
 import com.raphfrk.craftproxyclient.net.TransferConnection;
@@ -30,7 +32,7 @@ import com.raphfrk.craftproxyclient.net.TransferConnection;
 public class HashDataMessageHandler extends Handler<HashDataMessage> {
 
 	@Override
-	public void handle(TransferConnection connection, HashDataMessage m) {
+	public void handle(TransferConnection connection, HashDataMessage m) throws IOException {
 		for (Hash h : m.getHashes()) {
 			connection.getManager().addHash(h);
 		}

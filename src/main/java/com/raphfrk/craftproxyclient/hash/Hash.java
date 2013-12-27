@@ -23,6 +23,8 @@
  */
 package com.raphfrk.craftproxyclient.hash;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 public class Hash {
@@ -81,6 +83,10 @@ public class Hash {
 	
 	public void put(ByteBuffer buf) {
 		buf.put(data);
+	}
+	
+	public void put(OutputStream os) throws IOException {
+		os.write(data);
 	}
 	
 	@Override

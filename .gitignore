@@ -63,5 +63,7 @@ nb-configuration.xml
 *.iws
 
 # Output files
+#######################
 access-token.1.64.json
 CraftProxyClientGUI.txt
+cache

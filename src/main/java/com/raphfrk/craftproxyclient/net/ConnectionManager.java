@@ -32,12 +32,14 @@ import gnu.trove.set.TShortSet;
 import gnu.trove.set.hash.TLongHashSet;
 import gnu.trove.set.hash.TShortHashSet;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.hash.Hash;
 import com.raphfrk.craftproxyclient.hash.HashStore;
 import com.raphfrk.craftproxyclient.hash.tree.HashTreeSet;
@@ -48,14 +50,22 @@ public class ConnectionManager {
 	private final TLongSet unknowns = new TLongHashSet();
 	private final TLongSet requested = new TLongHashSet();
 	private final TShortSet sectionIds = new TShortHashSet();
-	private final HashStore store = new HashStore();
+	private final HashStore store;
 	private final List<long[]> sectionHashes = new ArrayList<long[]>();
 	private final TLongList sectionCRCs = new TLongArrayList();
 	private final TIntList sectionLengths = new TIntArrayList();
 	private final HashTreeSet hashSet = new HashTreeSet();
 	private int decodedLength = 0;
 	
-	public boolean addHash(Hash hash) {
+	public ConnectionManager(File hashStore, long capacity, CraftProxyGUI gui) throws IOException {
+		this.store = new HashStore(hashStore, capacity, gui);
+	}
+	
+	public void initHashStore() throws IOException {
+		store.init();
+	}
+	
+	public boolean addHash(Hash hash) throws IOException {
 		store.add(hash);
 		unknowns.remove(hash.getHash());
 		return unknowns.isEmpty();
@@ -112,6 +122,10 @@ public class ConnectionManager {
 		
 	}
 	
+	public void shutdown() {
+		store.shutdown();
+	}
+	
 	private int getSectionHashes(ByteBuffer buf) throws IOException {
 		int magic = buf.getInt();
 		if (magic != MessageManager.getMagicInt()) {
@@ -159,7 +173,7 @@ public class ConnectionManager {
 		for (int i = 0; i < hashes.length; i++) {
 			Hash h = store.get(hashes[i]);
 			if (h == null) {
-				throw new IOException("Unable to find hash "+ hashes[i]);
+				throw new IOException("Unable to find hash " + hashes[i]);
 			}
 			try {
 				h.put(buf);

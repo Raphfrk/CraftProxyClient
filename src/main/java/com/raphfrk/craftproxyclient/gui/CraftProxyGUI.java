@@ -31,9 +31,11 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -46,11 +48,12 @@ import javax.swing.border.TitledBorder;
 
 import org.json.simple.JSONObject;
 
+import com.raphfrk.craftproxyclient.io.FileSizeUpdatable;
 import com.raphfrk.craftproxyclient.io.PropertiesFile;
 import com.raphfrk.craftproxyclient.net.ConnectionListener;
 import com.raphfrk.craftproxyclient.net.auth.AuthManager;
 
-public class CraftProxyGUI extends JFrame implements WindowListener, ActionListener {
+public class CraftProxyGUI extends JFrame implements WindowListener, ActionListener, FileSizeUpdatable {
 	
 	private static final long serialVersionUID = 1L;
 	
@@ -228,6 +231,33 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 		});
 	}
 	
+	public long getCapacity() {
+		final AtomicLong capacity = new AtomicLong();
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {
+				public void run() {
+					long size;
+					try {
+						size = Long.parseLong(desiredSize.getText()) * 1024 * 1024;
+					} catch (NumberFormatException e) {
+						SwingUtilities.invokeLater(new Runnable() {
+							public void run() {
+								GUIManager.messageBox("Unable to parse desired file cache size, using maximum");
+							}
+						});
+						size = Long.MAX_VALUE;
+					}
+					capacity.set(size);
+				}
+			});
+		} catch (InvocationTargetException e) {
+			return Long.MAX_VALUE;
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+		return capacity.get();
+	}
+	
 	public void setStatus(String ... lines) {
 		for (int i = 0; i < lines.length; i++) {
 			setStatus(lines[i]);
@@ -255,6 +285,16 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 				} else {
 					setStatus(text);
 				}
+			}
+		});
+	}
+	
+	@Override
+	public void updateFileSize(long fileSize) {
+		final double size = ((100L * fileSize) / 1024 / 1024) / 100.0D;
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				currentSize.setText(Double.toString(size));
 			}
 		});
 	}
@@ -296,15 +336,6 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 		}
 		sb.append("</html>");
 		info.setText(sb.toString());
-	}
-	
-	public void safeSetFileSize(final String text) {
-		SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				currentSize.setText(text);
-				currentSize.updateUI();
-			}
-		});
 	}
 
 	public void windowClosing(WindowEvent paramWindowEvent) {
@@ -392,6 +423,5 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 		connect.setText("Stop");
 		setStatus("Starting proxy server");
 	}
-
 
 }

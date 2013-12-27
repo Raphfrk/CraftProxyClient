@@ -201,8 +201,11 @@ public class TransferConnection extends Thread {
 		return manager;
 	}
 	
-	public void setCaching() {
-		caching = true;
+	public void setCaching() throws IOException {
+		if (!caching) {
+			manager.initHashStore();
+			caching = true;
+		}
 	}
 
 }

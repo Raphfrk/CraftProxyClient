@@ -23,11 +23,15 @@
  */
 package com.raphfrk.craftproxyclient;
 
+import java.io.File;
+import java.io.IOException;
+
 import javax.swing.SwingUtilities;
 
 import com.raphfrk.craftproxyclient.crypt.Crypt;
 import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.gui.GUIManager;
+import com.raphfrk.craftproxyclient.io.HashFileStore;
 
 public class CraftProxyClient {
 	
@@ -38,14 +42,23 @@ public class CraftProxyClient {
 		gui = new CraftProxyGUI();
 	}
 	
-	private void init() {
+	private boolean init() {
 		
 		if (!Crypt.init()) {
 			GUIManager.messageBox("Unable to load Bouncy Castle crypt provider");
-			return;
+			return false;
+		}
+		
+		try {
+			HashFileStore.lockDirectory(new File("cache"));
+		} catch (IOException e) {
+			GUIManager.messageBox(e.getMessage());
+			return false;
 		}
 		
 		gui.init();
+		
+		return true;
 		
 	}
 	
@@ -53,7 +66,9 @@ public class CraftProxyClient {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				instance = new CraftProxyClient();
-				instance.init();	
+				if (!instance.init()) {
+					instance.gui.dispose();
+				}
 			}
 		});
 	}
