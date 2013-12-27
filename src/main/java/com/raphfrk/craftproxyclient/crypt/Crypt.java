@@ -23,106 +23,24 @@
  */
 package com.raphfrk.craftproxyclient.crypt;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.Provider;
 import java.security.SecureRandom;
-import java.security.Security;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Crypt {
 	
 	private static Crypt instance;
 	
-	private final static String filename = "bcprov-jdk15on-150.jar";
-	
 	private final static AtomicReference<SecureRandom> random = new AtomicReference<SecureRandom>();
 	
 	public static synchronized boolean init() {
 		if (instance == null) {
-			try {
-				instance = new Crypt();
-			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IOException e) {
-				return false;
-			}
+			instance = new Crypt();
 		}
 		return true;
 	}
 	
-	private Crypt() throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-
-		copyBCJar();
-		
-		loadBCProvider();
-	}
-	
-	private void loadBCProvider() throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-		Path p = Paths.get(filename);
-
-		URLClassLoader ucl = URLClassLoader.newInstance(new URL[] {p.toUri().toURL()}, getClass().getClassLoader());
-
-		Class<?> clazz = ucl.loadClass("org.bouncycastle.jce.provider.BouncyCastleProvider");
-
-		Security.addProvider((Provider) clazz.newInstance());
-
-	}
-	
-	private void copyBCJar() throws IOException {
-		File f = new File(filename);
-		
-		if (f.exists()) {
-			return;
-		}
-		
-		URL u = getBCJar();
-		
-		if (u == null) {
-			throw new IOException("Bouncy castle not present in jar file");
-		}
-		
-		copyFromURL(u, f);
-	}
-	
-	private URL getBCJar() {
-		return getClass().getResource("/" + filename);
-	}
-	
-	private void copyFromURL(URL src, File dest) throws IOException{
-		InputStream in = src.openStream();
-		
-		try {
-			OutputStream out = new FileOutputStream(filename);
-			try {
-				byte[] buf = new byte[2048];
-				int count = 0;
-				while (count != -1) {
-					count = in.read(buf);
-					if (count > 0) {
-						out.write(buf, 0, count);
-					}
-				}
-			} finally {
-				if (out != null) {
-					out.close();
-				}
-			}
-		} finally {
-			if (in != null) {
-				in.close();
-			}
-		}
-	}
-
 	private static SecureRandom getSecureRandom() {
 		SecureRandom r = random.getAndSet(null);
 		if (r == null) {

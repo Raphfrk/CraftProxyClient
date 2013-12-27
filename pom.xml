@@ -172,7 +172,6 @@
 										<exclude>**/NOTICE</exclude>
 										<exclude>**/DEPENDENCIES</exclude>
 										<exclude>**/*.java</exclude>
-										<exclude>org/bouncycastle/**</exclude>
 									</excludes>
 								</filter>
 							</filters>
