@@ -43,12 +43,7 @@ import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 
 import com.raphfrk.craftproxyclient.crypt.Crypt;
-import com.raphfrk.craftproxyclient.hash.Hash;
-import com.raphfrk.craftproxyclient.message.HashDataMessage;
-import com.raphfrk.craftproxyclient.message.HashRequestMessage;
-import com.raphfrk.craftproxyclient.message.InitMessage;
 import com.raphfrk.craftproxyclient.message.MessageManager;
-import com.raphfrk.craftproxyclient.message.SectionAckMessage;
 import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.CryptByteChannelWrapper;
 import com.raphfrk.craftproxyclient.net.auth.AuthManager;
@@ -80,7 +75,10 @@ public class P164Protocol extends Protocol {
 		server.writePacket(h);
 		
 		int id = server.getPacketId();
-		if (id != 0xFD) {
+		if (id == 0xFF) {
+			server.transferPacket(client);
+			return false;
+		} else if (id != 0xFD) {
 			sendKick("Expecting Encrypt Key Request packet", client);
 			return false;
 		}

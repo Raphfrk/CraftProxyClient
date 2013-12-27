@@ -3,7 +3,7 @@
 
 	<!-- Project information -->
 	<name>CraftProxyClient</name>
-	<groupId>raphfrk.com</groupId>
+	<groupId>com.raphfrk</groupId>
 	<artifactId>craftproxyclient</artifactId>
 	<version>dev-SNAPSHOT</version>
 	<url>http://raphfrk.com</url>
