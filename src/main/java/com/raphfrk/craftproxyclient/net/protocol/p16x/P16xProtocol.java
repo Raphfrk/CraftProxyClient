@@ -100,7 +100,10 @@ public class P16xProtocol extends Protocol {
 		}
 		
 		id = server.getPacketId();
-		if (id != 0xFC) {
+		if (id == 0xFF) {
+			server.transferPacket(client);
+			return false;
+		} if (id != 0xFC) {
 			sendKick("Expecting Encrypt Key Response packet", client);
 			return false;
 		}
@@ -117,8 +120,11 @@ public class P16xProtocol extends Protocol {
 		server.writePacket(status);
 		
 		id = server.getPacketId();
-		if (id != 0x01) {
-			sendKick("Didn't receive login packet", client);
+		if (id == 0xFF) {
+			server.transferPacket(client);
+			return false;
+		} if (id != 0x01) {
+			sendKick("Didn't receive login packet, received packet " + id, client);
 			return false;
 		}
 		
