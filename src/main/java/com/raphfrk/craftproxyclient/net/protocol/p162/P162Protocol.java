@@ -21,10 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.protocol.p164;
+package com.raphfrk.craftproxyclient.net.protocol.p162;
 
-import com.raphfrk.craftproxyclient.net.protocol.p16x.P16xPacketRegistry;
+import com.raphfrk.craftproxyclient.net.protocol.p16x.P16xProtocol;
 
-public class P164PacketRegistry extends P16xPacketRegistry {
-		
+public class P162Protocol extends P16xProtocol {
+	
+	public P162Protocol() {
+		super("1.62 (74)", new P162PacketRegistry());
+	}
+
 }

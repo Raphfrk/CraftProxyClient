@@ -21,23 +21,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.protocol.p164;
+package com.raphfrk.craftproxyclient.net.protocol.p16x;
 
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 
-public class P164ClientStatus extends Packet {
+public class P16xLoginRequest extends Packet {
 	
-	public P164ClientStatus(Packet p) {
+	public P16xLoginRequest(Packet p) {
 		super(p);
 	}
 	
-	public P164ClientStatus(byte status) {
-		super(0xCD, new Object[] {(byte) 0xCD, (byte) status});
+	public P16xLoginRequest(int entityId, String worldType, byte gamemode, byte dimension, byte difficulty, byte none, byte maxPlayers) {
+		super(0x01, new Object[] {(byte) 0x01, entityId, worldType, gamemode, dimension, difficulty, none, maxPlayers});
 	}
 	
 	
-	public Byte getStatus() {
-		return (Byte) getField(1);
+	public int getEntityId() {
+		return (Integer) getField(1);
+	}
+	
+	public String getWorldType() {
+		return (String) getField(2);
+	}
+	
+	public byte getGameMode() {
+		return (Byte) getField(3);
+	}
+	
+	public byte getDimension() {
+		return (byte) getField(4);
+	}
+	
+	public byte getDifficulty() {
+		return (byte) getField(5);
+	}
+	
+	public byte getNone() {
+		return (byte) getField(6);
+	}
+	
+	public byte getMaxPlayers() {
+		return (byte) getField(7);
 	}
 
 }

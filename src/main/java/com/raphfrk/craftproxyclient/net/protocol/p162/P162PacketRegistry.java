@@ -21,23 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.protocol.p164;
+package com.raphfrk.craftproxyclient.net.protocol.p162;
 
-import com.raphfrk.craftproxyclient.net.protocol.Handshake;
-import com.raphfrk.craftproxyclient.net.protocol.Packet;
+import com.raphfrk.craftproxyclient.net.protocol.p16x.P16xPacketRegistry;
 
-public class P164Kick extends Packet implements Handshake {
-
-	public P164Kick(String message) {
-		super(0xFF, new Object[] {(byte) 0xFF, message});
-	}
-	
-	public P164Kick(Packet p) {
-		super(p);
-	}
-	
-	public String getMessage() {
-		return (String) getField(1);
-	}
-
+public class P162PacketRegistry extends P16xPacketRegistry {
+		
 }

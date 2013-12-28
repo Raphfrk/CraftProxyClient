@@ -120,6 +120,7 @@ public class ConnectionListener extends Thread {
 							handshake = p164Bootstrap.getHandshake(client.getPacket());
 							protocol = p164Bootstrap.getProtocol(handshake);
 							if (protocol == null) {
+								gui.setStatus(p164Bootstrap.getProtocolFailInfo(handshake));
 								continue;
 							}
 							client.setRegistry(protocol.getPacketRegistry());

@@ -21,17 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.protocol.p164;
+package com.raphfrk.craftproxyclient.net.protocol.p16x;
 
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 
-public class P164EncryptionKeyResponse extends Packet {
+public class P16xEncryptionKeyResponse extends Packet {
 	
-	public P164EncryptionKeyResponse(Packet p) {
+	public P16xEncryptionKeyResponse(Packet p) {
 		super(p);
 	}
 	
-	public P164EncryptionKeyResponse(byte[] secret, byte[] token) {
+	public P16xEncryptionKeyResponse(byte[] secret, byte[] token) {
 		super(0xFC, new Object[] {(byte) 0xFC, secret, token});
 	}
 	

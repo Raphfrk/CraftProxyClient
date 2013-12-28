@@ -31,8 +31,9 @@ import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
-import com.raphfrk.craftproxyclient.net.protocol.p164.P164Handshake;
+import com.raphfrk.craftproxyclient.net.protocol.p162.P162Protocol;
 import com.raphfrk.craftproxyclient.net.protocol.p164.P164Protocol;
+import com.raphfrk.craftproxyclient.net.protocol.p16x.P16xHandshake;
 
 public class P164BootstrapProtocol extends Protocol {
 	
@@ -40,37 +41,25 @@ public class P164BootstrapProtocol extends Protocol {
 	
 	static {
 		protocol[78] = new P164Protocol();
+		protocol[74] = new P162Protocol();
 	}
 
 	public P164BootstrapProtocol() {
 		super(new P164BootstrapPacketRegistry());
 	}
 	
-	public P164Handshake getHandshake(Packet p) {
-		return new P164Handshake(p);
+	public P16xHandshake getHandshake(Packet p) {
+		return new P16xHandshake(p);
 	}
 	
 	public Protocol getProtocol(Handshake handshake) {
-		return protocol[((P164Handshake) handshake).getProtocolVersion()];
+		return protocol[((P16xHandshake) handshake).getProtocolVersion()];
 	}
 	
-	public void handlePing(PacketChannel client) throws IOException {
-		StringBuilder sb = new StringBuilder();
-		sb.append((char) 0xA7);
-		sb.append((char) 0x31);
-		sb.append((char) 0);
-		sb.append("78");
-		sb.append((char) 0);
-		sb.append("1.64");
-		sb.append((char) 0);
-		sb.append("CraftProxy Client");
-		sb.append((char) 0);
-		sb.append("0");
-		sb.append((char) 0);
-		sb.append("20");
-		client.writePacket(new Packet(0xFF, new Object[] {(byte) 0xFF, sb.toString()}));
+	public String getProtocolFailInfo(Handshake handshake) {
+		return "Unknown protocol version " + ((P16xHandshake) handshake).getProtocolVersion();
 	}
-
+	
 	@Override
 	public Packet convertSubMessageToPacket(SubMessage s) {
 		throw new UnsupportedOperationException();
