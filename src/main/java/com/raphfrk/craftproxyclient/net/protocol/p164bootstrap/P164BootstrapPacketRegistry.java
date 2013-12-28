@@ -32,9 +32,11 @@ public class P164BootstrapPacketRegistry extends PacketRegistry {
 	private final static Type<String> tString = new String16Type();
 	
 	public P164BootstrapPacketRegistry() {
-		super.register(2, new Type[] {tByte, tString, tString, tInt});
-		super.register(0xFC, new Type[] {tShortByteArray, tShortByteArray});
-		super.register(0xFD, new Type[] {tString, tShortByteArray, tShortByteArray});
+		super.register(2, tByte, tString, tString, tInt);
+		super.register(0xFA, tString, tShortByteArray);
+		super.register(0xFC, tShortByteArray, tShortByteArray);
+		super.register(0xFD, tString, tShortByteArray, tShortByteArray);
+		super.register(0xFE, tByte);
 		super.register(0xFF, tString);
 		super.done();
 	}

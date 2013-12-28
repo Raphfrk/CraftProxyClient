@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
+import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
 import com.raphfrk.craftproxyclient.net.protocol.p164bootstrap.P164BootstrapProtocol;
@@ -85,17 +86,31 @@ public class ConnectionListener extends Thread {
 					client = new PacketChannel(c, clientDataIn, clientDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 					try {
 						int id = client.getPacketId();
-
+						
 						Handshake handshake = null;
 
 						if (id == 0xFE) {
-							ByteBuffer b = ByteBuffer.allocate(1);
-							if (client.getRawChannel().read(b) != 1 || b.get(0) != 1) {
+							client.setRegistry(p164Bootstrap.getPacketRegistry());
+							Packet ping = client.getPacket();
+							if ((Byte) ping.getField(1) != 1) {
+								System.out.println("Ping code " + ping.getField(1));
 								continue;
 							}
-							client.setRegistry(p164Bootstrap.getPacketRegistry());
-							p164Bootstrap.handlePing(client);
 							gui.setStatus("Ping received");
+							SocketChannel s = SocketChannel.open();
+							try {
+								s.connect(serverAddr);
+							} catch (IOException e) {
+								continue;
+							}
+							PacketChannel server = new PacketChannel(s, serverDataIn, serverDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+							server.setRegistry(p164Bootstrap.getPacketRegistry());
+							server.writePacket(ping);
+							Packet plugin = client.getPacket();
+							server.writePacket(plugin);
+							server.writePacket(plugin);
+							Packet kick = server.getPacket();
+							client.writePacket(kick);
 							continue;
 						}
 
