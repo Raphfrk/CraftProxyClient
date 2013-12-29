@@ -47,8 +47,8 @@ public class PacketChannelTest {
 	public void transferTest() throws IOException {
 		
 		PacketRegistry registry = new PacketRegistry()
-			.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
-			.register(1, new Type[] {new LongType()})
+			.register(0, new Type[] {new ByteType(), new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
+			.register(1, new Type[] {new ByteType(), new LongType()})
 			.done();
 
 		byte[] arr = new byte[128];
@@ -104,8 +104,8 @@ public class PacketChannelTest {
 	public void discardTest() throws IOException {
 		
 		PacketRegistry registry = new PacketRegistry()
-			.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
-			.register(1, new Type[] {new LongType()})
+			.register(0, new Type[] {new ByteType(), new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
+			.register(1, new Type[] {new ByteType(), new LongType()})
 			.done();
 
 		byte[] arr = new byte[128];
@@ -156,8 +156,8 @@ public class PacketChannelTest {
 	public void skipTest() throws IOException {
 
 		PacketRegistry registry = new PacketRegistry()
-		.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
-		.register(1, new Type[] {new LongType()})
+		.register(0, new Type[] {new ByteType(), new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
+		.register(1, new Type[] {new ByteType(), new LongType()})
 		.done();
 
 		byte[] arr = new byte[256];
@@ -202,8 +202,8 @@ public class PacketChannelTest {
 	public void markTest() throws IOException {
 
 		PacketRegistry registry = new PacketRegistry()
-		.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
-		.register(1, new Type[] {new LongType()})
+		.register(0, new Type[] {new ByteType(), new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
+		.register(1, new Type[] {new ByteType(), new LongType()})
 		.done();
 
 		byte[] arr = new byte[256];
@@ -270,8 +270,8 @@ public class PacketChannelTest {
 	public void getPacketTest() throws IOException {
 
 		PacketRegistry registry = new PacketRegistry()
-		.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
-		.register(1, new Type[] {new LongType()})
+		.register(0, new Type[] {new ByteType(), new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
+		.register(1, new Type[] {new ByteType(), new LongType()})
 		.done();
 
 		byte[] arr = new byte[256];
@@ -324,8 +324,8 @@ public class PacketChannelTest {
 	public void writePacketTest() throws IOException {
 
 		PacketRegistry registry = new PacketRegistry()
-		.register(0, new Type[] {new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
-		.register(1, new Type[] {new LongType()})
+		.register(0, new Type[] {new ByteType(), new IntType(), new CountSizedArrayType(new ByteType(), 1), new ShortType(), new IntType()})
+		.register(1, new Type[] {new ByteType(), new LongType()})
 		.done();
 
 		byte[] arr = new byte[256];
