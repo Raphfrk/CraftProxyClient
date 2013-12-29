@@ -74,7 +74,7 @@ public class PacketChannelTest {
 		
 		ByteChannelImpl combined = new ByteChannelImpl(readable, writable);
 		
-		PacketChannel channel = new PacketChannel(combined, 640, registry);
+		PacketChannel channel = new PacketChannel(combined, true, 640, registry);
 		
 		try {
 			while (true) {
@@ -131,7 +131,7 @@ public class PacketChannelTest {
 		
 		ByteChannelImpl combined = new ByteChannelImpl(readable, writable);
 		
-		PacketChannel channel = new PacketChannel(combined, 64, registry);
+		PacketChannel channel = new PacketChannel(combined, true, 64, registry);
 		channel.setWrappedChannel(channel.getRawChannel());
 		
 		try {
@@ -176,7 +176,7 @@ public class PacketChannelTest {
 		
 		ByteChannelImpl combined = new ByteChannelImpl(readable, null);
 		
-		PacketChannel channel = new PacketChannel(combined, 64, registry);
+		PacketChannel channel = new PacketChannel(combined, true, 64, registry);
 		
 		for (int i = 0; i < 5; i++) {
 			int id = channel.getPacketId();
@@ -222,7 +222,7 @@ public class PacketChannelTest {
 		
 		ByteChannelImpl combined = new ByteChannelImpl(readable, null);
 		
-		PacketChannel channel = new PacketChannel(combined, 256, registry);
+		PacketChannel channel = new PacketChannel(combined, true, 256, registry);
 		
 		for (int i = 0; i < 3; i++) {
 			int id = channel.getPacketId();
@@ -290,7 +290,7 @@ public class PacketChannelTest {
 		
 		ByteChannelImpl combined = new ByteChannelImpl(readable, null);
 		
-		PacketChannel channel = new PacketChannel(combined, 64, registry);
+		PacketChannel channel = new PacketChannel(combined, true, 64, registry);
 		
 		for (int i = 0; i < 5; i++) {
 			int id = channel.getPacketId();
@@ -337,7 +337,7 @@ public class PacketChannelTest {
 		
 		ByteChannelImpl combined = new ByteChannelImpl(readable, writable);
 		
-		PacketChannel channel = new PacketChannel(combined, 64, 64, registry);
+		PacketChannel channel = new PacketChannel(combined, true, 64, 64, registry);
 
 		Packet p1 = new Packet(1, new Object[] {(byte) 1, 7L});
 		Packet p0 = new Packet(0, new Object[] {(byte) 0, 9, new byte[] {0, 1, -1}, (short) 12, 0x12345678});

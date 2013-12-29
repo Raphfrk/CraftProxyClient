@@ -70,6 +70,10 @@ public class Packet {
 		values[id] = value;
 	}
 	
+	public int getFieldCount() {
+		return values.length;
+	}
+	
 	public byte[] getSerialized() {
 		return this.arr;
 	}
@@ -94,7 +98,7 @@ public class Packet {
 		} else {
 			first = false;
 		}
-		sb.append(Hex.toHexString(arr));
+		sb.append(arr == null ? "<null>" : Hex.toHexString(arr));
 		sb.append("}");
 		return sb.toString();
 	}

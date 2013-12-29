@@ -29,8 +29,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
+
+import org.bouncycastle.util.encoders.Hex;
 
 import com.raphfrk.craftproxyclient.net.SingleByteByteChannelWrapper;
 import com.raphfrk.craftproxyclient.net.types.Type;
@@ -46,36 +49,38 @@ public class PacketChannel {
 	private PacketRegistry registry;
 	private final AtomicInteger dataIn;
 	private final AtomicInteger dataOut;
+	private final boolean toServer;
 	
 	private int id = -1;
 	private int read = 0;
 	private int mark = -1;
 	private int packetStart = -1;
 	
-	public PacketChannel(ByteChannel channel, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize) {
-		this(channel, dataIn, dataOut, readBufferSize, 0);
+	public PacketChannel(ByteChannel channel, boolean toServer, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize) {
+		this(channel, toServer, dataIn, dataOut, readBufferSize, 0);
 	}
 	
-	public PacketChannel(ByteChannel channel, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize, int writeBufferSize) {
-		this(channel, dataIn, dataOut, readBufferSize, writeBufferSize, null);
+	public PacketChannel(ByteChannel channel, boolean toServer, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize, int writeBufferSize) {
+		this(channel, toServer, dataIn, dataOut, readBufferSize, writeBufferSize, null);
 	}
 	
-	public PacketChannel(ByteChannel channel, int readBufferSize, PacketRegistry registry) {
-		this(channel, readBufferSize, 0, registry);
+	public PacketChannel(ByteChannel channel, boolean toServer, int readBufferSize, PacketRegistry registry) {
+		this(channel, toServer, readBufferSize, 0, registry);
 	}
 	
-	public PacketChannel(ByteChannel channel, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize, PacketRegistry registry) {
-		this(channel, dataIn, dataOut, readBufferSize, 0, registry);
+	public PacketChannel(ByteChannel channel, boolean toServer, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize, PacketRegistry registry) {
+		this(channel, toServer, dataIn, dataOut, readBufferSize, 0, registry);
 	}
 	
-	public PacketChannel(ByteChannel channel, int readBufferSize, int writeBufferSize, PacketRegistry registry) {
-		this(channel, new AtomicInteger(), new AtomicInteger(), readBufferSize, writeBufferSize, registry);
+	public PacketChannel(ByteChannel channel, boolean toServer, int readBufferSize, int writeBufferSize, PacketRegistry registry) {
+		this(channel, toServer, new AtomicInteger(), new AtomicInteger(), readBufferSize, writeBufferSize, registry);
 	}
 	
-	public PacketChannel(ByteChannel channel, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize, int writeBufferSize, PacketRegistry registry) {
+	public PacketChannel(ByteChannel channel, boolean toServer, AtomicInteger dataIn, AtomicInteger dataOut, int readBufferSize, int writeBufferSize, PacketRegistry registry) {
 		this.dataIn = dataIn;
 		this.dataOut = dataOut;
 		this.rawChannel = channel;
+		this.toServer = toServer;
 		this.channel = new SingleByteByteChannelWrapper(this.rawChannel);
 		this.buf = ByteBuffer.allocateDirect(readBufferSize);
 		this.writeBuf = ByteBuffer.allocateDirect(writeBufferSize);
@@ -90,6 +95,7 @@ public class PacketChannel {
 	 */
 	public void setRegistry(PacketRegistry registry) {
 		this.registry = registry;
+		this.id = -1;
 	}
 	
 	/**
@@ -119,8 +125,9 @@ public class PacketChannel {
 	public Packet getPacket() throws IOException {
 		packetStart = buf.position();
 		getPacketId();
+
 		@SuppressWarnings("rawtypes")
-		Type[] types = registry.getPacketInfo(id);
+		Type[] types = registry.getPacketInfo(id, !toServer);
 		if (types == null) {
 			throw new IOException("Unable to process packet id " + id);
 		}
@@ -151,9 +158,9 @@ public class PacketChannel {
 	@SuppressWarnings("unchecked")
 	public void writePacket(Packet p) throws IOException {
 		@SuppressWarnings("rawtypes")
-		Type[] types = registry.getPacketInfo(p.getId());
+		Type[] types = registry.getPacketInfo(p.getId(), toServer);
 		writeBuf.clear();
-
+		
 		for (int i = 0; i < types.length; i++) {
 			if (!types[i].write(p.getField(i), writeBuf)) {
 				throw new IOException("Buffer full when writing packet");
@@ -234,7 +241,7 @@ public class PacketChannel {
 		packetStart = buf.position();
 		getPacketId();
 		@SuppressWarnings("rawtypes")
-		Type[] types = registry.getCompressedPacketInfo(id);
+		Type[] types = registry.getCompressedPacketInfo(id, toServer);
 		if (types == null) {
 			throw new IOException("Unable to process packet id " + id);
 		}
@@ -275,7 +282,7 @@ public class PacketChannel {
 		packetStart = buf.position();
 		getPacketId();
 		@SuppressWarnings("rawtypes")
-		Type[] types = registry.getCompressedPacketInfo(id);
+		Type[] types = registry.getCompressedPacketInfo(id, toServer);
 		if (types == null) {
 			throw new IOException("Unable to process packet id " + id);
 		}

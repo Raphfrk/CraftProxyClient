@@ -21,24 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.protocol.p164bootstrap;
+package com.raphfrk.craftproxyclient.net.protocol.p17xstatus;
 
-import com.raphfrk.craftproxyclient.net.protocol.PacketRegistry;
-import com.raphfrk.craftproxyclient.net.types.String16Type;
+import com.raphfrk.craftproxyclient.net.protocol.p17x.P17xPacketRegistry;
 import com.raphfrk.craftproxyclient.net.types.Type;
+import com.raphfrk.craftproxyclient.net.types.VarIntStringType;
+import com.raphfrk.craftproxyclient.net.types.VarIntType;
 
-public class P164BootstrapPacketRegistry extends PacketRegistry {
+public class P17xStatusPacketRegistry extends P17xPacketRegistry {
 	
-	private final static Type<String> tString = new String16Type();
+	private final static Type<String> tString = new VarIntStringType();
+	private final static VarIntType tVarInt = new VarIntType();
 	
-	public P164BootstrapPacketRegistry() {
-		super.register(2, tByte, tString, tString, tInt);
-		super.register(0xFA, tString, tShortByteArray);
-		super.register(0xFC, tShortByteArray, tShortByteArray);
-		super.register(0xFD, tString, tShortByteArray, tShortByteArray);
-		super.register(0xFE, tByte);
-		super.register(0xFF, tString);
+	public P17xStatusPacketRegistry() {
+		super.setToServer();
+		super.register(0, tVarInt, tVarInt);
+		super.register(1, tVarInt, tVarInt, tLong);
+		super.setToClient();
+		super.register(0, tVarInt, tVarInt, tString);
+		super.register(1, tVarInt, tVarInt, tLong);
 		super.done();
 	}
-	
+
 }

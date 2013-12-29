@@ -49,13 +49,15 @@ public class TransferConnection extends Thread {
 	private final ReentrantLock outLock = new ReentrantLock();
 	private final ConcurrentLinkedQueue<Packet> sendQueue = new ConcurrentLinkedQueue<Packet>();
 	private final ConnectionManager manager;
+	private final boolean toServer;
 	private TransferConnection other;
 	private final ConnectionListener parent;
 	private AtomicBoolean running = new AtomicBoolean(true);
 	private boolean caching = false;
 	
-	public TransferConnection(String type, Protocol protocol, PacketChannel in, PacketChannel out, ConnectionManager manager, ConnectionListener parent) {
+	public TransferConnection(String type, Protocol protocol, boolean toServer, PacketChannel in, PacketChannel out, ConnectionManager manager, ConnectionListener parent) {
 		super("TransferConnection " + type);
+		this.toServer = toServer;
 		this.protocol = protocol;
 		this.in = in;
 		this.out = out;
@@ -158,7 +160,7 @@ public class TransferConnection extends Thread {
 						outLock.lock();
 					}
 				}
-				if (protocol.isKickMessage(in.getPacketId())) {
+				if (protocol.isKickMessage(in.getPacketId(), toServer)) {
 					in.transferPacketLocked(out, outLock);
 					break;
 				}

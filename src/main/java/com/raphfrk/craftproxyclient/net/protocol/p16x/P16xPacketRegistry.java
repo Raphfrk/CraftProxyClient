@@ -118,4 +118,11 @@ public class P16xPacketRegistry extends PacketRegistry {
 		done();
 	}
 	
+	protected PacketRegistry register(int id, Type ... types) {
+		Type[] newTypes = new Type[types.length + 1];
+		newTypes[0] = tByte;
+		System.arraycopy(types, 0, newTypes, 1, types.length);
+		return super.register(id, newTypes);
+	}
+	
 }

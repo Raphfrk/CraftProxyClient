@@ -51,7 +51,8 @@ import com.raphfrk.craftproxyclient.crypt.Crypt;
 public class AuthManager {
 	
 	private final static String authServer = "https://authserver.mojang.com";
-	private final static String sessionServer = "http://session.minecraft.net/game/joinserver.jsp?";
+	private final static String sessionServer16 = "http://session.minecraft.net/game/joinserver.jsp?";
+	private final static String sessionServer17 = "https://sessionserver.mojang.com/session/minecraft/join";
 	private final static String tokenFilename = "access-token.1.64.json";
 
 	private static JSONObject loginDetails;
@@ -172,6 +173,7 @@ public class AuthManager {
 				}
 			} finally {
 				writer.close();
+				con.disconnect();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -196,15 +198,16 @@ public class AuthManager {
 		return (String) loginDetails.get("accessToken");
 	}
 	
-	public static void authServer(String hash) throws IOException {
+	@SuppressWarnings("unchecked")
+	public static void authServer16(String hash) throws IOException {
 		URL url;
+		String username;
+		String accessToken;
 		try {
 			if (loginDetails == null) {
 				throw new IOException("Not logged in");
 			}
 
-			String username;
-			String accessToken;
 			try {
 				username = URLEncoder.encode(getUsername(), "UTF-8");
 				accessToken = URLEncoder.encode(getAccessToken(), "UTF-8");
@@ -213,7 +216,8 @@ public class AuthManager {
 				throw new IOException("Username/password encoding error", e);
 			}
 
-			String urlString = sessionServer + "user=" + username + "&sessionId=" + accessToken + "&serverId=" + hash;
+			String urlString;
+			urlString = sessionServer16 + "user=" + username + "&sessionId=" + accessToken + "&serverId=" + hash;
 			url = new URL(urlString);
 		} catch (MalformedURLException e) {
 			throw new IOException("Auth server URL error", e);
@@ -223,11 +227,11 @@ public class AuthManager {
 		con.setReadTimeout(5000);
 		con.setConnectTimeout(5000);
 		con.connect();
-
+		
 		if (con.getResponseCode() != 200) {
 			throw new IOException("Auth server rejected username and password");
 		}
-
+		
 		BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
 		try {
 			String reply = reader.readLine();
@@ -236,6 +240,71 @@ public class AuthManager {
 			}
 		} finally {
 			reader.close();
+			con.disconnect();
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static void authServer17(String hash) throws IOException {
+		URL url;
+		String username;
+		String accessToken;
+		try {
+			if (loginDetails == null) {
+				throw new IOException("Not logged in");
+			}
+
+			try {
+				username = URLEncoder.encode(getUsername(), "UTF-8");
+				accessToken = URLEncoder.encode(getAccessToken(), "UTF-8");
+				hash = URLEncoder.encode(hash, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new IOException("Username/password encoding error", e);
+			}
+
+			String urlString;
+			urlString = sessionServer17;
+			url = new URL(urlString);
+		} catch (MalformedURLException e) {
+			throw new IOException("Auth server URL error", e);
+		}
+		HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
+		con.setDoOutput(true);
+		con.setInstanceFollowRedirects(false);
+		con.setReadTimeout(5000);
+		con.setConnectTimeout(5000);
+		con.setRequestMethod("POST");
+		con.setRequestProperty("Content-Type", "application/json"); 
+		con.connect();
+		
+		JSONObject obj = new JSONObject();
+		obj.put("accessToken", accessToken);
+		obj.put("selectedProfile", loginDetails.get("selectedProfile"));
+		obj.put("serverId", hash);
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(con.getOutputStream(), StandardCharsets.UTF_8));
+		try {
+			obj.writeJSONString(writer);
+			writer.flush();
+			writer.close();
+		} catch (IOException e) {
+			if (writer != null) {
+				writer.close();
+				con.disconnect();
+				return;
+			}
+		}
+		if (con.getResponseCode() != 200) {
+			throw new IOException("Unable to verify username, please restart proxy");
+		}
+		BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
+		try {
+			String reply = reader.readLine();
+			if (reply != null) {
+				throw new IOException("Auth server replied (" + reply + ")");
+			}
+		} finally {
+			reader.close();
+			con.disconnect();
 		}
 	}
 	
@@ -279,7 +348,6 @@ public class AuthManager {
 		if (obj == null) {
 			return null;
 		}
-		
 		String clientToken = (String) obj.get("clientToken");
 		String accessToken = (String) obj.get("accessToken");
 		
@@ -297,6 +365,12 @@ public class AuthManager {
 		if (username == null) {
 			return null;
 		}
+		
+		String id = (String) selectedProfile.get("id");
+		if (id == null) {
+			return null;
+		}
+		
 		JSONObject stripped = new JSONObject();
 		
 		stripped.put("accessToken", accessToken);
@@ -305,6 +379,7 @@ public class AuthManager {
 		if (includeUsername) {
 			JSONObject selectedProfileNew = new JSONObject();
 			selectedProfileNew.put("name", username);
+			selectedProfileNew.put("id", id);
 
 			stripped.put("selectedProfile", selectedProfileNew);
 		}

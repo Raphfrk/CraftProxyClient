@@ -26,7 +26,6 @@ package com.raphfrk.craftproxyclient.net;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,7 +35,11 @@ import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
-import com.raphfrk.craftproxyclient.net.protocol.p164bootstrap.P164BootstrapProtocol;
+import com.raphfrk.craftproxyclient.net.protocol.p16xbootstrap.P16xBootstrapProtocol;
+import com.raphfrk.craftproxyclient.net.protocol.p17x.P17xHandshake;
+import com.raphfrk.craftproxyclient.net.protocol.p17xhandshake.P17xHandshakeProtocol;
+import com.raphfrk.craftproxyclient.net.protocol.p17xlogin.P17xLoginProtocol;
+import com.raphfrk.craftproxyclient.net.protocol.p17xstatus.P17xStatusProtocol;
 
 public class ConnectionListener extends Thread {
 
@@ -52,7 +55,11 @@ public class ConnectionListener extends Thread {
 	private final AtomicInteger clientDataIn = new AtomicInteger();
 	private final AtomicInteger clientDataOut = new AtomicInteger();
 
-	private final P164BootstrapProtocol p164Bootstrap = new P164BootstrapProtocol();
+	private final P16xBootstrapProtocol p16xBootstrap = new P16xBootstrapProtocol();
+	private final P17xHandshakeProtocol p17xHandshake = new P17xHandshakeProtocol();
+	private final P17xStatusProtocol p17xStatus = new P17xStatusProtocol();
+	private final P17xLoginProtocol p17xLogin = new P17xLoginProtocol();
+
 
 	public ConnectionListener(CraftProxyGUI gui, int port, String serverHostname, int serverPort) throws IOException {
 		super("ConnectionListener");
@@ -83,52 +90,101 @@ public class ConnectionListener extends Thread {
 				Protocol protocol = null;
 				PacketChannel client = null;
 				try {
-					client = new PacketChannel(c, clientDataIn, clientDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+					client = new PacketChannel(c, false, clientDataIn, clientDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 					try {
 						int id = client.getPacketId();
 						
 						Handshake handshake = null;
 
 						if (id == 0xFE) {
-							client.setRegistry(p164Bootstrap.getPacketRegistry());
+							client.setRegistry(p16xBootstrap.getPacketRegistry());
 							Packet ping = client.getPacket();
 							if ((Byte) ping.getField(1) != 1) {
-								System.out.println("Ping code " + ping.getField(1));
 								continue;
 							}
-							gui.setStatus("Ping received");
+							gui.setStatus("1.6.x Ping received");
 							SocketChannel s = SocketChannel.open();
 							try {
 								s.connect(serverAddr);
 							} catch (IOException e) {
 								continue;
 							}
-							PacketChannel server = new PacketChannel(s, serverDataIn, serverDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
-							server.setRegistry(p164Bootstrap.getPacketRegistry());
-							server.writePacket(ping);
-							Packet plugin = client.getPacket();
-							server.writePacket(plugin);
-							server.writePacket(plugin);
-							Packet kick = server.getPacket();
-							client.writePacket(kick);
+							try {
+								PacketChannel server = new PacketChannel(s, true, serverDataIn, serverDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+								server.setRegistry(p16xBootstrap.getPacketRegistry());
+								server.writePacket(ping);
+								Packet plugin = client.getPacket();
+								server.writePacket(plugin);
+								Packet kick = server.getPacket();
+								client.writePacket(kick);
+							} finally {
+								if (s != null) {
+									s.close();
+								}
+							}
 							continue;
 						}
 
 						if (id == 2) {
 							// 1.64 protocol
-							client.setRegistry(p164Bootstrap.getPacketRegistry());
-							handshake = p164Bootstrap.getHandshake(client.getPacket());
-							protocol = p164Bootstrap.getProtocol(handshake);
+							client.setRegistry(p16xBootstrap.getPacketRegistry());
+							handshake = p16xBootstrap.getHandshake(client.getPacket());
+							protocol = p16xBootstrap.getProtocol(handshake);
 							if (protocol == null) {
-								gui.setStatus(p164Bootstrap.getProtocolFailInfo(handshake));
+								gui.setStatus(p16xBootstrap.getProtocolFailInfo(handshake));
 								continue;
 							}
 							client.setRegistry(protocol.getPacketRegistry());
 						}
 
-
 						if (protocol == null) {
-							continue;
+							client.setRegistry(p17xHandshake.getPacketRegistry());
+							id = client.getPacketId();
+							
+							if (id == 0) {
+								Packet handshakePacket = client.getPacket();
+								handshake = p17xHandshake.getHandshake(handshakePacket);
+								int nextState = ((P17xHandshake) handshake).getNextState();
+								if (nextState == 1) {
+									// Server ping
+									client.setRegistry(p17xStatus.getPacketRegistry());
+									Packet request = client.getPacket();
+									gui.setStatus("1.7.x Ping received");
+									SocketChannel s = SocketChannel.open();
+									try {
+										s.connect(serverAddr);
+									} catch (IOException e) {
+										continue;
+									}
+									try {
+										PacketChannel server = new PacketChannel(s, true, serverDataIn, serverDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+										server.setRegistry(p17xHandshake.getPacketRegistry());
+										server.writePacket(handshakePacket);
+										server.setRegistry(p17xStatus.getPacketRegistry());
+										server.writePacket(request);
+										Packet response = server.getPacket();
+										client.writePacket(response);
+										Packet ping = client.getPacket();
+										server.writePacket(ping);
+										Packet pingReply = server.getPacket();
+										client.writePacket(pingReply);
+									} finally {
+										if (s != null) {
+											s.close();
+										}
+									}
+									continue;
+								}
+								protocol = p17xHandshake.getProtocol(handshake);
+								if (protocol == null) {
+									gui.setStatus(p17xHandshake.getProtocolFailInfo(handshake));
+									continue;
+								}
+								protocol = p17xLogin;
+								client.setRegistry(p17xLogin.getPacketRegistry());
+							} else {
+								continue;
+							}
 						}
 
 						gui.setStatus("Connection received, login started", "Protocol: " + protocol.getName());
@@ -143,9 +199,16 @@ public class ConnectionListener extends Thread {
 
 						PacketChannel server = null;
 						try {
-							server = new PacketChannel(s, serverDataIn, serverDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
+							server = new PacketChannel(s, true, serverDataIn, serverDataOut, BUFFER_SIZE, WRITE_BUFFER_SIZE);
 							server.setRegistry(protocol.getPacketRegistry());
-							protocol.handleLogin(handshake, client, server, serverAddr);
+							Protocol newProtocol = protocol.handleLogin(handshake, client, server, serverAddr);
+							if (newProtocol == null) {
+								gui.setStatus("Login failed");
+								continue;
+							}
+							protocol = newProtocol;
+							server.setRegistry(protocol.getPacketRegistry());
+							client.setRegistry(protocol.getPacketRegistry());
 						} catch (IOException e) {
 							if (server != null) {
 								protocol.sendKick("Connection closing, " + e.getMessage(), client);
@@ -163,8 +226,8 @@ public class ConnectionListener extends Thread {
 						try {
 							manager = new ConnectionManager(new File("cache"), capacity, gui);
 							try {
-								serverToClient = new TransferConnection("Server to client", protocol, server, client, manager, this);
-								clientToServer = new TransferConnection("Client to server", protocol, client, server, null, this);
+								serverToClient = new TransferConnection("Server to client", protocol, false, server, client, manager, this);
+								clientToServer = new TransferConnection("Client to server", protocol, false, client, server, null, this);
 							} catch (RuntimeException ee) {
 								ee.printStackTrace();
 								throw ee;

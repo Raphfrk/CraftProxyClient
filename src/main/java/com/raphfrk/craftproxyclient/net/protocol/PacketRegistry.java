@@ -44,6 +44,9 @@ import com.raphfrk.craftproxyclient.net.types.values.Slot;
 
 public class PacketRegistry {
 	
+	protected static int TO_SERVER = 1 << 0;
+	protected static int TO_CLIENT = 1 << 1;
+	
 	protected ByteType tByte = new ByteType();
 	protected IntType tInt = new IntType();
 	protected ShortType tShort = new ShortType();
@@ -72,21 +75,37 @@ public class PacketRegistry {
 	
 	protected Type<Object> tPropertyArray = new PropertyArrayType();
 	
-	@SuppressWarnings("rawtypes")
-	private final Type[][] packetInfo = new Type[256][];
+	private int regMask = TO_SERVER | TO_CLIENT;
 	
 	@SuppressWarnings("rawtypes")
-	private final Type[][] compressedPacketInfo = new Type[256][];
+	private final Type[][] packetInfo = new Type[512][];
+	
+	@SuppressWarnings("rawtypes")
+	private final Type[][] compressedPacketInfo = new Type[512][];
 	
 	private boolean setupComplete = false;
 	
 	@SuppressWarnings("rawtypes")
 	protected PacketRegistry register(int id, Type ... types) {
+		if ((regMask & TO_SERVER) == TO_SERVER) {
+			register(id, true, types);
+		}
+		if ((regMask & TO_CLIENT) == TO_CLIENT) {
+			register(id, false, types);
+		}
+		return this;
+	}
+	
+	@SuppressWarnings("rawtypes")
+	protected PacketRegistry register(int id, boolean toServer, Type ... types) {
 		if (setupComplete) {
 			throw new IllegalStateException("New packets may not be added after register setup is complete");
 		}
 		if (id < 0 || id > 255) {
 			throw new IllegalStateException("Packet id out of range");
+		}
+		if (toServer) {
+			id += 256;
 		}
 		if (packetInfo[id] != null) {
 			throw new IllegalStateException("Packet id " + id + " already in use");
@@ -96,15 +115,8 @@ public class PacketRegistry {
 	}
 	
 	protected PacketRegistry done() {
-		for (int i = 0; i < 256; i++) {
+		for (int i = 0; i < packetInfo.length; i++) {
 			if (packetInfo[i] != null) {
-				@SuppressWarnings("rawtypes")
-				Type[] newArr = new Type[packetInfo[i].length + 1];
-				newArr[0] = new ByteType();
-				for (int j = 1; j < newArr.length; j++) {
-					newArr[j] = packetInfo[i][j - 1];
-				}
-				packetInfo[i] = newArr;
 				compressPacket(i);
 			}
 		}
@@ -140,13 +152,31 @@ public class PacketRegistry {
 		compressedPacketInfo[i] = compressed.toArray(new Type[0]);
 	}
 	
+	protected void setToClient() {
+		regMask = TO_CLIENT;
+	}
+	
+	protected void setToServer() {
+		regMask = TO_SERVER;
+	}
+	
+	protected void setToBoth() {
+		regMask = TO_SERVER | TO_CLIENT;
+	}
+	
 	@SuppressWarnings("rawtypes")
-	public Type[] getPacketInfo(int id) {
+	public Type[] getPacketInfo(int id, boolean toServer) {
+		if (id >= 256 || id < 0) {
+			throw new IllegalArgumentException("Packet id must be between 0 and 255");
+		}
+		if (toServer) {
+			id += 256;
+		}
 		return packetInfo[id];
 	}
 	
 	@SuppressWarnings("rawtypes")
-	public Type[] getCompressedPacketInfo(int id) {
+	public Type[] getCompressedPacketInfo(int id, boolean toServer) {
 		return compressedPacketInfo[id];
 	}
 	

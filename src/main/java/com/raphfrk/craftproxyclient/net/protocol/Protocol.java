@@ -50,9 +50,9 @@ public abstract class Protocol {
 	
 	public abstract Packet getKick(String message);
 	
-	public abstract boolean isKickMessage(int id);
+	public abstract boolean isKickMessage(int id, boolean toServer);
 	
-	public abstract boolean handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException;
+	public abstract Protocol handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException;
 	
 	public abstract boolean isMessagePacket(int id);
 	

@@ -65,14 +65,14 @@ public class P16xProtocol extends Protocol {
 	}
 
 	@Override
-	public boolean handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
+	public Protocol handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
 		
 		P16xHandshake h = (P16xHandshake) handshake;
 
 		String username = h.getUsername();
 		if (username == null || !username.equals(AuthManager.getUsername())) {
 			sendKick("Login mismatch, proxy logged as " + AuthManager.getUsername() + " client logged in as " + username, client);
-			return false;
+			return null;
 		}
 		h.setServerPort(serverAddr.getPort());
 		h.setServerhost(serverAddr.getHostString());
@@ -81,10 +81,10 @@ public class P16xProtocol extends Protocol {
 		int id = server.getPacketId();
 		if (id == 0xFF) {
 			server.transferPacket(client);
-			return false;
+			return null;
 		} else if (id != 0xFD) {
 			sendKick("Expecting Encrypt Key Request packet", client);
-			return false;
+			return null;
 		}
 		
 		P16xEncryptionKeyRequest request = new P16xEncryptionKeyRequest(server.getPacket());
@@ -92,26 +92,26 @@ public class P16xProtocol extends Protocol {
 		byte[] secret = Crypt.getBytes(16);
 		
 		if (!authSession(secret, client, request)) {
-			return false;
+			return null;
 		}
 		
 		if (!sendEncryptionKeyResponse(secret, client, server, request)) {
-			return false;
+			return null;
 		}
 		
 		id = server.getPacketId();
 		if (id == 0xFF) {
 			server.transferPacket(client);
-			return false;
+			return null;
 		} if (id != 0xFC) {
 			sendKick("Expecting Encrypt Key Response packet", client);
-			return false;
+			return null;
 		}
 		
 		P16xEncryptionKeyResponse response = new P16xEncryptionKeyResponse(server.getPacket());
 		if (response.getPubKey().length != 0 || response.getToken().length != 0) {
 			sendKick("Invalid Encrypt Key Response packet", client);
-			return false;
+			return null;
 		}
 		
 		enableEncryption(server, client, secret);
@@ -122,16 +122,16 @@ public class P16xProtocol extends Protocol {
 		id = server.getPacketId();
 		if (id == 0xFF) {
 			server.transferPacket(client);
-			return false;
+			return null;
 		} if (id != 0x01) {
 			sendKick("Didn't receive login packet, received packet " + id, client);
-			return false;
+			return null;
 		}
 		
 		P16xLoginRequest login = new P16xLoginRequest(server.getPacket());
 		client.writePacket(login);
 		
-		return true;
+		return this;
 	}
 	
 	@Override
@@ -140,7 +140,7 @@ public class P16xProtocol extends Protocol {
 	}
 	
 	@Override
-	public boolean isKickMessage(int id) {
+	public boolean isKickMessage(int id, boolean toServer) {
 		return id == 0xFF;
 	}
 	
@@ -181,7 +181,7 @@ public class P16xProtocol extends Protocol {
 	private boolean authSession(byte[] secret, PacketChannel client, P16xEncryptionKeyRequest request) throws IOException {
 		String hash = SHA1Hash(new Object[] {request.getServerId(), secret, request.getPubKey()});
 		
-		AuthManager.authServer(hash);
+		AuthManager.authServer16(hash);
 		
 		return true;
 	}
@@ -215,32 +215,32 @@ public class P16xProtocol extends Protocol {
 	}
 	
 	private static String SHA1Hash(Object[] input) {
-        try {
-                MessageDigest md = MessageDigest.getInstance("SHA-1");
-                md.reset();
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+			md.reset();
 
-                for (Object o : input) {
-                        if (o instanceof String) {
-                                md.update(((String) o).getBytes("ISO_8859_1"));
-                        } else if (o instanceof byte[]) {
-                                md.update((byte[]) o);
-                        } else {
-                                return null;
-                        }
-                }
+			for (Object o : input) {
+				if (o instanceof String) {
+					md.update(((String) o).getBytes("ISO_8859_1"));
+				} else if (o instanceof byte[]) {
+					md.update((byte[]) o);
+				} else {
+					return null;
+				}
+			}
 
-                BigInteger bigInt = new BigInteger(md.digest());
+			BigInteger bigInt = new BigInteger(md.digest());
 
-                if (bigInt.compareTo(BigInteger.ZERO) < 0) {
-                        bigInt = bigInt.negate();
-                        return "-" + bigInt.toString(16);
-                } else {
-                        return bigInt.toString(16);
-                }
-        } catch (Exception ioe) {
-                return null;
-        }
-}
+			if (bigInt.compareTo(BigInteger.ZERO) < 0) {
+				bigInt = bigInt.negate();
+				return "-" + bigInt.toString(16);
+			} else {
+				return bigInt.toString(16);
+			}
+		} catch (Exception ioe) {
+			return null;
+		}
+	}
 
 	@Override
 	public boolean isMessagePacket(int id) {

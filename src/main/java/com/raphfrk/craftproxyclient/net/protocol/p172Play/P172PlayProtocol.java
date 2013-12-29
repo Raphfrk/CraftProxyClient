@@ -21,47 +21,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.raphfrk.craftproxyclient.net.protocol.p164bootstrap;
+package com.raphfrk.craftproxyclient.net.protocol.p172Play;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+
+import org.json.simple.JSONObject;
 
 import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
-import com.raphfrk.craftproxyclient.net.protocol.p162.P162Protocol;
-import com.raphfrk.craftproxyclient.net.protocol.p164.P164Protocol;
-import com.raphfrk.craftproxyclient.net.protocol.p16x.P16xHandshake;
+import com.raphfrk.craftproxyclient.net.protocol.p17x.P17xHandshake;
+import com.raphfrk.craftproxyclient.net.protocol.p17x.P17xKick;
 
-public class P164BootstrapProtocol extends Protocol {
+public class P172PlayProtocol extends Protocol {
 	
-	private final static Protocol[] protocol = new Protocol[256];
-	
-	static {
-		protocol[78] = new P164Protocol();
-		protocol[74] = new P162Protocol();
-	}
-
-	public P164BootstrapProtocol() {
-		super(new P164BootstrapPacketRegistry());
+	public P172PlayProtocol() {
+		super(new P172PlayPacketRegistry());
 	}
 	
-	public P16xHandshake getHandshake(Packet p) {
-		return new P16xHandshake(p);
-	}
-	
-	public Protocol getProtocol(Handshake handshake) {
-		return protocol[((P16xHandshake) handshake).getProtocolVersion()];
-	}
-	
-	public String getProtocolFailInfo(Handshake handshake) {
-		return "Unknown protocol version " + ((P16xHandshake) handshake).getProtocolVersion();
+	public P17xHandshake getHandshake(Packet p) {
+		return new P17xHandshake(p);
 	}
 	
 	@Override
-	public Packet convertSubMessageToPacket(SubMessage s) {
+	public String getName() {
+		return "1.72 (4)";
+	}
+
+	@Override
+	public void sendKick(String message, PacketChannel client) throws IOException {
+		client.writePacket(getKick(message));
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Packet getKick(String message) {
+		JSONObject obj = new JSONObject();
+		obj.put("text", message);
+		return new P17xKick(0x40, obj.toJSONString());
+	}
+
+	@Override
+	public Packet convertSubMessageToPacket(SubMessage s) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 
@@ -71,52 +75,37 @@ public class P164BootstrapProtocol extends Protocol {
 	}
 
 	@Override
-	public String getName() {
-		throw new UnsupportedOperationException();
+	public boolean isKickMessage(int id, boolean toServer) {
+		return !toServer && id == 0x40;
 	}
 
 	@Override
-	public void sendKick(String message, PacketChannel client) throws IOException {
-		throw new UnsupportedOperationException();
-	}
-	
-	@Override
-	public boolean isKickMessage(int id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public Packet getKick(String message) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
+	public Protocol handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public boolean isMessagePacket(int id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public SubMessage convertPacketToSubMessage(Packet p) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public Packet getRegisterPacket(String channel) {
-		throw new UnsupportedOperationException();
+		return false;
 	}
 
 	@Override
 	public String getMessageChannel(Packet p) {
 		throw new UnsupportedOperationException();
 	}
-	
+
 	@Override
 	public byte[] getMessageData(Packet p) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public SubMessage convertPacketToSubMessage(Packet p) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Packet getRegisterPacket(String channel) {
 		throw new UnsupportedOperationException();
 	}
 
