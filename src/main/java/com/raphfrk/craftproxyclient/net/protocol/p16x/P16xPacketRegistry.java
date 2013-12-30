@@ -33,6 +33,7 @@ public class P16xPacketRegistry extends PacketRegistry {
 	
 	public P16xPacketRegistry() {
 		
+		addPacketIdByte();
 		register(0x00, tInt);
 		register(0x01, tInt, tString, tByte, tByte, tByte, tByte, tByte);
 		register(0x02, tByte, tString, tString, tInt);
@@ -116,13 +117,6 @@ public class P16xPacketRegistry extends PacketRegistry {
 		register(0xFE, tByte);
 		register(0xFF, tString);
 		done();
-	}
-	
-	protected PacketRegistry register(int id, Type ... types) {
-		Type[] newTypes = new Type[types.length + 1];
-		newTypes[0] = tByte;
-		System.arraycopy(types, 0, newTypes, 1, types.length);
-		return super.register(id, newTypes);
 	}
 	
 }

@@ -32,6 +32,7 @@ public class P16xBootstrapPacketRegistry extends PacketRegistry {
 	private final static Type<String> tString = new String16Type();
 	
 	public P16xBootstrapPacketRegistry() {
+		super.addPacketIdByte();
 		super.register(2, tByte, tString, tString, tInt);
 		super.register(0xFA, tString, tShortByteArray);
 		super.register(0xFC, tShortByteArray, tShortByteArray);

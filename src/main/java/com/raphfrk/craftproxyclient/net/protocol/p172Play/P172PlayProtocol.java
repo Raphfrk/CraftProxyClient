@@ -159,9 +159,7 @@ public class P172PlayProtocol extends Protocol {
 
 	@Override
 	public boolean setDataArray(Packet p, byte[] data) {
-		System.out.println("Attempting to set " + p.getId());
 		if (p.getId() == 0x21) {
-			System.out.println("Setting data array length " + data.length);
 			byte[] deflatedData = new byte[data.length + 100];
 			int size = CompressionManager.deflate(data, deflatedData);
 			byte[] deflatedDataResized = new byte[size];
@@ -170,7 +168,6 @@ public class P172PlayProtocol extends Protocol {
 			int length = 1 + 4 + 4 + 1 + 2 + 2 + 4 + deflatedDataResized.length;
 			p.setField(0, length);
 		} else if (p.getId() == 0x26) {
-			System.out.println("Setting data array length " + data.length);
 			byte[] deflatedData = new byte[data.length + 100];
 			int size = CompressionManager.deflate(data, deflatedData);
 			byte[] deflatedDataResized = new byte[size];

@@ -25,6 +25,7 @@ package com.raphfrk.craftproxyclient.net.protocol;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import com.raphfrk.craftproxyclient.net.types.BulkDataType;
 import com.raphfrk.craftproxyclient.net.types.ByteType;
@@ -75,6 +76,8 @@ public class PacketRegistry {
 	
 	protected Type<Object> tPropertyArray = new PropertyArrayType();
 	
+	protected boolean addPacketIdByte = false;
+	
 	private int regMask = TO_SERVER | TO_CLIENT;
 	
 	@SuppressWarnings("rawtypes")
@@ -109,6 +112,12 @@ public class PacketRegistry {
 		}
 		if (packetInfo[id] != null) {
 			throw new IllegalStateException("Packet id " + id + " already in use");
+		}
+		if (addPacketIdByte) {
+			Type[] newTypes = new Type[types.length + 1];
+			newTypes[0] = tByte;
+			System.arraycopy(types, 0, newTypes, 1, types.length);
+			types = newTypes;
 		}
 		packetInfo[id] = types;
 		return this;
@@ -162,6 +171,10 @@ public class PacketRegistry {
 	
 	protected void setToBoth() {
 		regMask = TO_SERVER | TO_CLIENT;
+	}
+	
+	protected void addPacketIdByte() {
+		addPacketIdByte = true;
 	}
 	
 	@SuppressWarnings("rawtypes")

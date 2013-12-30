@@ -131,7 +131,7 @@ public class PacketChannel {
 		if (types == null) {
 			throw new IOException("Unable to process packet id " + id);
 		}
-
+		
 		Object[] values = new Object[types.length];
 		
 		int totalLength = 0;
