@@ -243,7 +243,7 @@ public class P16xProtocol extends Protocol {
 	}
 
 	@Override
-	public boolean isMessagePacket(int id) {
+	public boolean isMessagePacket(int id, boolean toServer) {
 		return id == 0xFA;
 	}
 	
@@ -306,7 +306,7 @@ public class P16xProtocol extends Protocol {
 	}
 
 	@Override
-	public void setDataArray(Packet p, byte[] data) {
+	public boolean setDataArray(Packet p, byte[] data) {
 		if (p.getId() == 0x33) {
 			byte[] deflatedData = new byte[data.length + 100];
 			int size = CompressionManager.deflate(data, deflatedData);
@@ -320,7 +320,10 @@ public class P16xProtocol extends Protocol {
 			System.arraycopy(deflatedData, 0, deflatedDataResized, 0, size);
 			BulkData d = (BulkData) p.getField(1);
 			d.setChunkData(deflatedDataResized);
+		} else {
+			return false;
 		}
+		return true;
 	}
 
 }

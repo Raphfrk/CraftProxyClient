@@ -54,7 +54,7 @@ public abstract class Protocol {
 	
 	public abstract Protocol handleLogin(Handshake handshake, PacketChannel client, PacketChannel server, InetSocketAddress serverAddr) throws IOException;
 	
-	public abstract boolean isMessagePacket(int id);
+	public abstract boolean isMessagePacket(int id, boolean toServer);
 	
 	public abstract String getMessageChannel(Packet p);
 	
@@ -68,6 +68,6 @@ public abstract class Protocol {
 	
 	public abstract byte[] getDataArray(Packet p);
 
-	public abstract void setDataArray(Packet p, byte[] data);
+	public abstract boolean setDataArray(Packet p, byte[] data);
 	
 }

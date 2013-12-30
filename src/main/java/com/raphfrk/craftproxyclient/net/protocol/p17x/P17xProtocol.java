@@ -93,7 +93,7 @@ public class P17xProtocol extends Protocol {
 	}
 
 	@Override
-	public boolean isMessagePacket(int id) {
+	public boolean isMessagePacket(int id, boolean toServer) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -128,7 +128,7 @@ public class P17xProtocol extends Protocol {
 	}
 
 	@Override
-	public void setDataArray(Packet p, byte[] data) {
+	public boolean setDataArray(Packet p, byte[] data) {
 		throw new UnsupportedOperationException();
 	}
 

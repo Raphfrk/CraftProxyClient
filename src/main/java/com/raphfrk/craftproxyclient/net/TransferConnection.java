@@ -25,6 +25,7 @@ package com.raphfrk.craftproxyclient.net;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -89,7 +90,7 @@ public class TransferConnection extends Thread {
 				if (ids.size() > 100) {
 					ids.removeFirst();
 				}
-				if (protocol.isMessagePacket(id)) {
+				if (protocol.isMessagePacket(id, toServer)) {
 					Packet p = in.getPacket();
 					String channel = protocol.getMessageChannel(p);
 					if ("REGISTER".equals(channel)) {
@@ -124,7 +125,7 @@ public class TransferConnection extends Thread {
 							}
 							while (manager.hasUnknowns()) {
 								int id2 = in.getPacketId();
-								if (protocol.isMessagePacket(id2)) {
+								if (protocol.isMessagePacket(id2, toServer)) {
 									Packet p2 = in.getPacket();
 									String channel = protocol.getMessageChannel(p2);
 									if (MessageManager.getChannelName().equals(channel)) {
@@ -146,7 +147,9 @@ public class TransferConnection extends Thread {
 					if (data == null) {
 						throw new IOException("Unable to process packet even after all unknowns were filled");
 					}
-					protocol.setDataArray(p, data);
+					if (!protocol.setDataArray(p, data)) {
+						throw new IOException("Unable to set data packet");
+					}
 					out.writePacketLocked(p, outLock);
 					other.queuePacket(protocol.convertSubMessageToPacket(new SectionAckMessage(manager.getSectionIds())));
 				} else {

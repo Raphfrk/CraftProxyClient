@@ -40,13 +40,23 @@ public class P172PlayPacketRegistry extends P17xPacketRegistry {
 		for (int i = 0; i < 65; i++) {
 			if (i == 0x40) {
 				register(i, tVarInt, tVarInt, tString);
+			} else if (i == 0x3F ){
+				register(i, tVarInt, tVarInt, tString, tShortByteArray);
+			} else if (i == 0x21) {
+				register(i, tVarInt, tVarInt, tInt, tInt, tBoolean, tShort, tShort, tIntByteArray);
+			} else if (i == 0x26) {
+				register(i, tVarInt, tVarInt, tBulk);
 			} else {
 				register(i, tFullPacket);
 			}
 		}
 		super.setToServer();
 		for (int i = 0; i < 24; i++) {
-			register(i, tFullPacket);
+			if (i == 0x17) {
+				register(i, tVarInt, tVarInt, tString, tShortByteArray);
+			} else {
+				register(i, tFullPacket);
+			}
 		}
 		super.done();
 	}

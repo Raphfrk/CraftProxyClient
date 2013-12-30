@@ -25,16 +25,21 @@ package com.raphfrk.craftproxyclient.net.protocol.p172Play;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 
 import org.json.simple.JSONObject;
 
+import com.raphfrk.craftproxyclient.message.MessageManager;
 import com.raphfrk.craftproxyclient.message.SubMessage;
+import com.raphfrk.craftproxyclient.net.protocol.CompressionManager;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
 import com.raphfrk.craftproxyclient.net.protocol.p17x.P17xHandshake;
 import com.raphfrk.craftproxyclient.net.protocol.p17x.P17xKick;
+import com.raphfrk.craftproxyclient.net.types.VarIntStringType;
+import com.raphfrk.craftproxyclient.net.types.values.BulkData;
 
 public class P172PlayProtocol extends Protocol {
 	
@@ -65,8 +70,11 @@ public class P172PlayProtocol extends Protocol {
 	}
 
 	@Override
-	public Packet convertSubMessageToPacket(SubMessage s) throws IOException {
-		throw new UnsupportedOperationException();
+	public Packet convertSubMessageToPacket(SubMessage message) throws IOException {
+		int channelNameLength = VarIntStringType.stringToLength(MessageManager.getChannelName());
+		byte[] data = MessageManager.encode(message.getSubCommand(), message.getData());
+		return new Packet(0x17, new Object[] {1 + channelNameLength + 2 + data.length, 0x17, MessageManager.getChannelName(), data});
+
 	}
 
 	@Override
@@ -85,43 +93,96 @@ public class P172PlayProtocol extends Protocol {
 	}
 
 	@Override
-	public boolean isMessagePacket(int id) {
-		return false;
+	public boolean isMessagePacket(int id, boolean toServer) {
+		return !toServer && id == 0x3F;
 	}
 
 	@Override
 	public String getMessageChannel(Packet p) {
-		throw new UnsupportedOperationException();
+		return (String) p.getField(2);
 	}
 
 	@Override
 	public byte[] getMessageData(Packet p) {
-		throw new UnsupportedOperationException();
+		return (byte[]) p.getField(3);
 	}
 
 	@Override
 	public SubMessage convertPacketToSubMessage(Packet p) throws IOException {
-		throw new UnsupportedOperationException();
+		String channel = (String) p.getField(2);
+		if (!channel.equals(MessageManager.getChannelName())) {
+			throw new IOException("Incorrect channel name " + channel);
+		}
+		byte[] data = (byte[]) p.getField(3);
+		return MessageManager.decode(data);
 	}
 
 	@Override
 	public Packet getRegisterPacket(String channel) {
-		throw new UnsupportedOperationException();
+		int registerLength = VarIntStringType.stringToLength("REGISTER");
+		byte[] channelName = MessageManager.getChannelName().getBytes(StandardCharsets.UTF_8);
+		return new Packet(0x17, new Object[] {1 + registerLength + 2 + channelName.length, 0x17, "REGISTER", channelName});
 	}
 
 	@Override
 	public boolean isDataPacket(int id) {
-		throw new UnsupportedOperationException();
+		return id == 0x21 || id == 0x26;
 	}
 
 	@Override
 	public byte[] getDataArray(Packet p) {
-		throw new UnsupportedOperationException();
+		if (p.getId() == 0x21) {
+			int primaryBitmask = ((Short) p.getField(5)) & 0xFFFF;
+			int sections = Integer.bitCount(primaryBitmask);
+			int maxSize = 256 + sections * 16384;
+			
+			byte[] data = (byte[]) p.getField(7);
+			
+			byte[] inflatedData = new byte[maxSize];
+			int inflatedSize = CompressionManager.inflate(data, inflatedData);
+			byte[] inflatedDataResized = new byte[inflatedSize];
+			System.arraycopy(inflatedData, 0, inflatedDataResized, 0, inflatedSize);
+			return inflatedDataResized;
+		} else  if (p.getId() == 0x26) {
+			BulkData d = (BulkData) p.getField(2);
+			int chunks = d.getChunks();
+			int maxSize = chunks * 16384 * 16;
+			byte[] inflatedData = new byte[maxSize];
+			int inflatedSize = CompressionManager.inflate(d.getChunkData(), inflatedData);
+			byte[] inflatedDataResized = new byte[inflatedSize];
+			System.arraycopy(inflatedData, 0, inflatedDataResized, 0, inflatedSize);
+			return inflatedDataResized;
+		} else {
+			return null;
+		}
 	}
 
 	@Override
-	public void setDataArray(Packet p, byte[] data) {
-		throw new UnsupportedOperationException();
+	public boolean setDataArray(Packet p, byte[] data) {
+		System.out.println("Attempting to set " + p.getId());
+		if (p.getId() == 0x21) {
+			System.out.println("Setting data array length " + data.length);
+			byte[] deflatedData = new byte[data.length + 100];
+			int size = CompressionManager.deflate(data, deflatedData);
+			byte[] deflatedDataResized = new byte[size];
+			System.arraycopy(deflatedData, 0, deflatedDataResized, 0, size);
+			p.setField(7, deflatedDataResized);
+			int length = 1 + 4 + 4 + 1 + 2 + 2 + 4 + deflatedDataResized.length;
+			p.setField(0, length);
+		} else if (p.getId() == 0x26) {
+			System.out.println("Setting data array length " + data.length);
+			byte[] deflatedData = new byte[data.length + 100];
+			int size = CompressionManager.deflate(data, deflatedData);
+			byte[] deflatedDataResized = new byte[size];
+			System.arraycopy(deflatedData, 0, deflatedDataResized, 0, size);
+			BulkData d = (BulkData) p.getField(2);
+			d.setChunkData(deflatedDataResized);
+			int length = 1 + 2 + 4 + 1 + deflatedDataResized.length + (4 + 4 + 2 + 2) * d.getChunks();
+			p.setField(0, length);
+		} else {
+			return false;
+		}
+		return true;
 	}
 
 }

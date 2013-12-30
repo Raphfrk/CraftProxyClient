@@ -193,7 +193,6 @@ public class P17xLoginProtocol extends P17xProtocol {
 		out.init(true, params);
 		in.init(false, params);
 		
-		System.out.println("Sticking with single byte channels");
 		// Unencrypted
 		client.setWrappedChannel(client.getRawChannel());
 

@@ -279,8 +279,11 @@ public class ConnectionListener extends Thread {
 			return;
 		}
 		int comp = 100 - ((100 * server) / client);
-		String text = "Bandwidth down " + (serverDataIn.get() / 1024) + "kB, up " + (serverDataOut.get() / 1024) + "kB (" + comp + "% compression)";
-		gui.setStatusReplace("Bandwidth", text);
+		String[] text = new String[3];
+		text[0] = "Compression " + comp + "%";
+		text[1] = "Down " + (clientDataOut.get() / 1024) + "kB to " + (serverDataIn.get() / 1024) + "kB";
+		text[2] = "Up " + (clientDataIn.get() / 1024) + " kB to " + (serverDataOut.get() / 1024) + "kB";
+		gui.setStatusReplace("Compression", text);
 	}
 	
 	public void interrupt(String message) {

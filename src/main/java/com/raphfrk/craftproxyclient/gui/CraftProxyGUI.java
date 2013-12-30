@@ -269,7 +269,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 		updateStatus();
 	}
 	
-	public void setStatusReplace(final String begin, final String text) {
+	public void setStatusReplace(final String begin, final String[] text) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				processInfoQueue();
@@ -277,10 +277,10 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 					setStatus(text);
 					return;
 				}
-				int lastIndex = infoLines.size() - 1;
-				String last = infoLines.get(lastIndex);
-				if (last.startsWith(begin)) {
-					infoLines.set(lastIndex, text);
+				if (infoLines.size() >= text.length && infoLines.get(infoLines.size() - text.length).startsWith(begin)) {
+					for (int i = 0; i < text.length; i++) {
+						infoLines.set(infoLines.size() - text.length + i, text[i]);
+					}
 					commitInfoLines();
 				} else {
 					setStatus(text);
