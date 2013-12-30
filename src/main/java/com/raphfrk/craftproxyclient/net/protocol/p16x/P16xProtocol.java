@@ -91,7 +91,7 @@ public class P16xProtocol extends Protocol {
 		
 		byte[] secret = Crypt.getBytes(16);
 		
-		if (!authSession(secret, client, request)) {
+		if (!"-".equals(request.getServerId()) && !authSession(secret, client, request)) {
 			return null;
 		}
 		
