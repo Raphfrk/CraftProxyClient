@@ -35,7 +35,7 @@ public class P16xEncryptionKeyResponse extends Packet {
 		super(0xFC, new Object[] {(byte) 0xFC, secret, token});
 	}
 	
-	public byte[] getPubKey() {
+	public byte[] getEncryptedSecret() {
 		return (byte[]) getField(1);
 	}
 	

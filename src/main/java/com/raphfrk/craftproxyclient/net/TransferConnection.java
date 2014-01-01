@@ -51,6 +51,7 @@ public class TransferConnection extends Thread {
 	private final ConcurrentLinkedQueue<Packet> sendQueue = new ConcurrentLinkedQueue<Packet>();
 	private final ConnectionManager manager;
 	private final boolean toServer;
+	private final LinkedList<Integer> ids = new LinkedList<Integer>();
 	private TransferConnection other;
 	private final ConnectionListener parent;
 	private AtomicBoolean running = new AtomicBoolean(true);
@@ -73,7 +74,6 @@ public class TransferConnection extends Thread {
 	public void run() {
 		int lastUsage = 0;
 		long lastUpdateTime = 0;
-		LinkedList<Integer> ids = new LinkedList<Integer>();
 		while (!interrupted()) {
 			try {
 				if (!running.get()) {
@@ -90,6 +90,7 @@ public class TransferConnection extends Thread {
 				if (ids.size() > 100) {
 					ids.removeFirst();
 				}
+
 				if (protocol.isMessagePacket(id, toServer)) {
 					Packet p = in.getPacket();
 					String channel = protocol.getMessageChannel(p);
@@ -170,7 +171,7 @@ public class TransferConnection extends Thread {
 			} catch (AsynchronousCloseException e) {
 				break;
 			} catch (IOException e) {
-				if (getManager() != null) {
+				if (!toServer) {
 					try {
 						out.writePacketLocked(protocol.getKick("ChunkCache: " + e.getMessage()), outLock);
 					} catch (IOException e1) {
@@ -179,6 +180,14 @@ public class TransferConnection extends Thread {
 				break;
 			}
 		}
+	}
+	
+	private void printIds() {
+		StringBuilder sb = new StringBuilder();
+		for (Integer i : this.ids) {
+			sb.append(i + ", ");
+		}
+		System.out.println("Ids " + sb.toString());
 	}
 	
 	public void queuePacket(Packet p) {

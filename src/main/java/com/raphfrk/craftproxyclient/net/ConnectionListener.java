@@ -227,7 +227,7 @@ public class ConnectionListener extends Thread {
 							manager = new ConnectionManager(new File("cache"), capacity, gui);
 							try {
 								serverToClient = new TransferConnection("Server to client", protocol, false, server, client, manager, this);
-								clientToServer = new TransferConnection("Client to server", protocol, false, client, server, null, this);
+								clientToServer = new TransferConnection("Client to server", protocol, true, client, server, null, this);
 							} catch (RuntimeException ee) {
 								ee.printStackTrace();
 								throw ee;

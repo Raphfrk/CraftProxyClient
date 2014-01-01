@@ -28,21 +28,36 @@ import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.DERNull;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.engines.RSAEngine;
+import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.modes.CFBBlockCipher;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
+import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
+import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.jcajce.provider.asymmetric.util.KeyUtil;
+import org.bouncycastle.util.Arrays;
 
 import com.raphfrk.craftproxyclient.crypt.Crypt;
+import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.message.MessageManager;
 import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.CryptByteChannelWrapper;
@@ -58,9 +73,12 @@ import com.raphfrk.craftproxyclient.net.types.values.BulkData;
 public class P16xProtocol extends Protocol {
 	
 	private final String name;
+	private final CraftProxyGUI gui;
 	
-	public P16xProtocol(String name, PacketRegistry registry) {
+	
+	public P16xProtocol(String name, PacketRegistry registry, CraftProxyGUI gui) {
 		super(registry);
+		this.gui = gui;
 		this.name = name;
 	}
 
@@ -88,12 +106,18 @@ public class P16xProtocol extends Protocol {
 		}
 		
 		P16xEncryptionKeyRequest request = new P16xEncryptionKeyRequest(server.getPacket());
-		
+
 		byte[] secret = Crypt.getBytes(16);
 		
 		if (!"-".equals(request.getServerId()) && !authSession(secret, client, request)) {
 			return null;
 		}
+		
+		AsymmetricCipherKeyPair serverRSAPair = getRSAKeyPair();
+		
+		byte[] token = Crypt.getBytes(4);
+		
+		sendEncryptionKeyRequest(serverRSAPair, token, client);
 		
 		if (!sendEncryptionKeyResponse(secret, client, server, request)) {
 			return null;
@@ -104,32 +128,82 @@ public class P16xProtocol extends Protocol {
 			server.transferPacket(client);
 			return null;
 		} if (id != 0xFC) {
-			sendKick("Expecting Encrypt Key Response packet", client);
+			sendKick("Expecting Encrypt Key Response packet from server", client);
 			return null;
 		}
 		
 		P16xEncryptionKeyResponse response = new P16xEncryptionKeyResponse(server.getPacket());
-		if (response.getPubKey().length != 0 || response.getToken().length != 0) {
+		if (response.getEncryptedSecret().length != 0 || response.getToken().length != 0) {
 			sendKick("Invalid Encrypt Key Response packet", client);
 			return null;
 		}
+
+		byte[] clientSecret;
+		id = client.getPacketId();
+		if (id != 0xFC) {
+			sendKick("Expected Encrypt Key Response packet from client", client);
+			return null;
+		}
 		
-		enableEncryption(server, client, secret);
+		P16xEncryptionKeyResponse clientResponse = new P16xEncryptionKeyResponse(client.getPacket());
+			
+		clientSecret = decryptSecret(serverRSAPair, clientResponse, client, token);
+
+		P16xEncryptionKeyResponse clientEnableEncrypt = new P16xEncryptionKeyResponse(new byte[0], new byte[0]);
+		client.writePacket(clientEnableEncrypt);
 		
-		P16xClientStatus status = new P16xClientStatus((byte) 0);
+		enableEncryption(server, client, secret, clientSecret);
+		
+		id = client.getPacketId();
+		boolean forge = false;
+		if (id == 1) {
+			P16xLoginRequest forgeLogin = new P16xLoginRequest(client.getPacket());
+			if (forgeLogin.getEntityId() != 0x53c8e61b) {
+				sendKick("Forge special login packet has incorrect entityId" + 0x53c8e61b, client);
+				return null;
+			}
+			gui.setStatus("Forge special login packet detected");
+			forge = true;
+			server.writePacket(forgeLogin);
+			id = client.getPacketId();
+		}
+		
+		id = client.getPacketId();
+		if (id == 0xFF) {
+			server.transferPacket(client);
+			return null;
+		} else if (id != 0xCD) {
+			sendKick("Didn't receive status update packet from client, received packet " + id, client);
+			return null;
+		}
+		
+		P16xClientStatus status = new P16xClientStatus(client.getPacket());
 		server.writePacket(status);
 		
 		id = server.getPacketId();
+		if (id == 0xFA) {
+			if (!handleForgeHandshake(server, client)) {
+				sendKick("Forge login handshake error", client);
+				return null;
+			}
+			id = server.getPacketId();
+		}
+		
 		if (id == 0xFF) {
 			server.transferPacket(client);
 			return null;
 		} if (id != 0x01) {
+			System.out.println("From server " + server.getPacket());
 			sendKick("Didn't receive login packet, received packet " + id, client);
 			return null;
 		}
 		
 		P16xLoginRequest login = new P16xLoginRequest(server.getPacket());
 		client.writePacket(login);
+		
+		if (forge) {
+			server.transferRawBytes(client, 3);
+		}
 		
 		return this;
 	}
@@ -163,19 +237,58 @@ public class P16xProtocol extends Protocol {
 	public String getName() {
 		return name;
 	}
-	
-	private void enableEncryption(PacketChannel server, PacketChannel client, byte[] secret) {
-		BufferedBlockCipher out = new BufferedBlockCipher(new CFBBlockCipher(new AESEngine(), 8));
-		BufferedBlockCipher in = new BufferedBlockCipher(new CFBBlockCipher(new AESEngine(), 8));
-		CipherParameters params = new ParametersWithIV(new KeyParameter(secret), secret);
-		out.init(true, params);
-		in.init(false, params);
-		
-		// Unencrypted
-		client.setWrappedChannel(client.getRawChannel());
 
-		// AES
-		server.setWrappedChannel(new CryptByteChannelWrapper(server.getRawChannel(), out, in));
+
+	private byte[] decryptSecret(AsymmetricCipherKeyPair RSAKeyPair, P16xEncryptionKeyResponse response, PacketChannel client, byte[] token) throws IOException {
+
+		AsymmetricBlockCipher rsa = new PKCS1Encoding(new RSAEngine());
+		
+		AsymmetricKeyParameter privateKey = RSAKeyPair.getPrivate();
+		
+		rsa.init(false, privateKey);
+		
+		byte[] decryptedSecret;
+		byte[] decryptedToken;
+		
+		try {
+			decryptedSecret = rsa.processBlock(response.getEncryptedSecret(), 0, response.getEncryptedSecret().length);
+		} catch (InvalidCipherTextException e) {
+			sendKick("Unable to encrypt shared secret " + e.getMessage(), client);
+			return null;
+		}
+		
+		try {
+			decryptedToken = rsa.processBlock(response.getToken(), 0, response.getToken().length);
+		} catch (InvalidCipherTextException e) {
+			sendKick("Unable to encrypt token " + e.getMessage(), client);
+			return null;
+		}
+		
+		if (!Arrays.areEqual(token, decryptedToken)) {
+			sendKick("Decrypted token mismatch", client);
+			return null;
+		}
+		
+		return decryptedSecret;
+
+	}
+	
+	private void enableEncryption(PacketChannel server, PacketChannel client, byte[] serverSecret, byte[] clientSecret) {
+		BufferedBlockCipher outServer = new BufferedBlockCipher(new CFBBlockCipher(new AESEngine(), 8));
+		BufferedBlockCipher inServer = new BufferedBlockCipher(new CFBBlockCipher(new AESEngine(), 8));
+		CipherParameters paramsServer = new ParametersWithIV(new KeyParameter(serverSecret), serverSecret);
+		outServer.init(true, paramsServer);
+		inServer.init(false, paramsServer);
+		
+		BufferedBlockCipher outClient = new BufferedBlockCipher(new CFBBlockCipher(new AESEngine(), 8));
+		BufferedBlockCipher inClient = new BufferedBlockCipher(new CFBBlockCipher(new AESEngine(), 8));
+		CipherParameters paramsClient = new ParametersWithIV(new KeyParameter(clientSecret), clientSecret);
+		outClient.init(true, paramsClient);
+		inClient.init(false, paramsClient);
+		
+		client.setWrappedChannel(new CryptByteChannelWrapper(client.getRawChannel(), outClient, inClient));
+
+		server.setWrappedChannel(new CryptByteChannelWrapper(server.getRawChannel(), outServer, inServer));
 	}
 	
 	private boolean authSession(byte[] secret, PacketChannel client, P16xEncryptionKeyRequest request) throws IOException {
@@ -212,6 +325,41 @@ public class P16xProtocol extends Protocol {
 		
 		server.writePacket(new P16xEncryptionKeyResponse(encryptedSecret, encryptedToken));
 		return true;
+	}
+	
+	private AsymmetricCipherKeyPair getRSAKeyPair() {
+		RSAKeyPairGenerator keyGen = new RSAKeyPairGenerator();
+		SecureRandom random = Crypt.getSeededRandom();
+		RSAKeyGenerationParameters params = new RSAKeyGenerationParameters(new BigInteger("10001", 16), random, 1024, 80);
+		keyGen.init(params);
+		return keyGen.generateKeyPair();
+	}
+	
+	private boolean sendEncryptionKeyRequest(AsymmetricCipherKeyPair keyPair, byte[] token, PacketChannel client) throws IOException {
+		
+		byte[] encoded = encodeRSAPublicKey((RSAKeyParameters) keyPair.getPublic());
+		
+		P16xEncryptionKeyRequest request = new P16xEncryptionKeyRequest("-", encoded, token);
+		
+		client.writePacket(request);
+		
+		return true;
+	}
+	
+	public byte[] encodeRSAPublicKey(RSAKeyParameters key) {
+		if (((RSAKeyParameters) key).isPrivate()) {
+			return null;
+		}
+
+		RSAKeyParameters rsaKey = (RSAKeyParameters) key;
+
+		ASN1EncodableVector encodable = new ASN1EncodableVector();
+		encodable.add(new ASN1Integer(rsaKey.getModulus()));
+		encodable.add(new ASN1Integer(rsaKey.getExponent()));
+
+		return KeyUtil.getEncodedSubjectPublicKeyInfo(
+				new AlgorithmIdentifier(PKCSObjectIdentifiers.rsaEncryption, DERNull.INSTANCE),
+				new DERSequence(encodable));
 	}
 	
 	private static String SHA1Hash(Object[] input) {
@@ -325,5 +473,46 @@ public class P16xProtocol extends Protocol {
 		}
 		return true;
 	}
-
+	
+	private boolean handleForgeHandshake(PacketChannel server, PacketChannel client) throws IOException {
+		
+		if (!isForgePacket(server, client, 0, "server")) {
+			return false;
+		}
+		
+		if (!isForgePacket(client, server, 1, "client")) {
+			return false;
+		}
+		
+		if (!isForgePacket(server, client, 2, "server")) {
+			return false;
+		}
+		
+		if (!isForgePacket(server, client, 7, "server")) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	private boolean isForgePacket(PacketChannel source, PacketChannel dest, int expectedId, String sourceName) throws IOException {
+		if (source.getPacketId() != 0xFA) {
+			return false;
+		}
+		Packet p = source.getPacket();
+		String tag = (String) p.getField(1);
+		if (!"FML".equals(tag)) {
+			dest.writePacket(p);
+			return false;
+		}
+		byte[] data = (byte[]) p.getField(2);
+		if ((data[0] & 0xFF) != expectedId) {
+			dest.writePacket(p);
+			return false;
+		}
+		
+		dest.writePacket(p);
+		return true;
+	}
+	
 }

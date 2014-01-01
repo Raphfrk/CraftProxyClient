@@ -273,6 +273,28 @@ public class PacketChannel {
 		id = -1;
 	}
 	
+	public void transferRawBytes(PacketChannel channel, int count) throws IOException {
+		transferRawBytes(channel, channel.channel, count);
+	}
+	
+	private void transferRawBytes(PacketChannel packetChannel, WritableByteChannel channel, int count) throws IOException {
+		if (buf.remaining() < count) {
+			readBytesToBuffer(count - buf.remaining());
+		}
+		dataIn.addAndGet(count);
+		if (packetChannel != null) {
+			packetChannel.dataOut.addAndGet(count);
+		} else {
+			System.out.println("Unable to update bandwidth");
+		}
+		int limit = buf.limit();
+		buf.limit(buf.position() + count);
+		while (count > 0) {
+			count -= channel.write(buf);
+		}
+		buf.limit(limit);
+	}
+	
 	/**
 	 * Skips the next packet
 	 * 

@@ -49,9 +49,22 @@ public class Crypt {
 			} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
 				r = new SecureRandom();
 			}
-			
 		}
 		return r;
+	}
+	
+	public static SecureRandom getSeededRandom() {
+		byte[] seed = new byte[20];
+		getBytes(seed);
+		SecureRandom random;
+		try {
+			random = SecureRandom.getInstance("SHA1PRNG", "SUN");
+		} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+			random = new SecureRandom();
+		}
+		random.setSeed(seed);
+		random.nextInt();
+		return random;
 	}
 	
 	public static long getLong() {

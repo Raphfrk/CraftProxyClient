@@ -23,12 +23,13 @@
  */
 package com.raphfrk.craftproxyclient.net.protocol.p164;
 
+import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.net.protocol.p16x.P16xProtocol;
 
 public class P164Protocol extends P16xProtocol {
 	
-	public P164Protocol() {
-		super("1.64 (78)", new P164PacketRegistry());
+	public P164Protocol(CraftProxyGUI gui) {
+		super("1.64 (78)", new P164PacketRegistry(), gui);
 	}
 
 }
