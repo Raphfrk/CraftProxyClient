@@ -25,9 +25,9 @@ package com.raphfrk.craftproxyclient.handler;
 
 import java.io.IOException;
 
-import com.raphfrk.craftproxyclient.hash.Hash;
-import com.raphfrk.craftproxyclient.message.HashDataMessage;
 import com.raphfrk.craftproxyclient.net.TransferConnection;
+import com.raphfrk.craftproxycommon.hash.Hash;
+import com.raphfrk.craftproxycommon.message.HashDataMessage;
 
 public class HashDataMessageHandler extends Handler<HashDataMessage> {
 

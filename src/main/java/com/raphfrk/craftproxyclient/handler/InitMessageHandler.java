@@ -25,8 +25,8 @@ package com.raphfrk.craftproxyclient.handler;
 
 import java.io.IOException;
 
-import com.raphfrk.craftproxyclient.message.InitMessage;
 import com.raphfrk.craftproxyclient.net.TransferConnection;
+import com.raphfrk.craftproxycommon.message.InitMessage;
 
 public class InitMessageHandler extends Handler<InitMessage> {
 	

@@ -29,7 +29,6 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
@@ -58,17 +57,17 @@ import org.bouncycastle.util.Arrays;
 
 import com.raphfrk.craftproxyclient.crypt.Crypt;
 import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
-import com.raphfrk.craftproxyclient.message.MessageManager;
-import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.CryptByteChannelWrapper;
 import com.raphfrk.craftproxyclient.net.auth.AuthManager;
-import com.raphfrk.craftproxyclient.net.protocol.CompressionManager;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.PacketRegistry;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
 import com.raphfrk.craftproxyclient.net.types.values.BulkData;
+import com.raphfrk.craftproxycommon.compression.CompressionManager;
+import com.raphfrk.craftproxycommon.message.MessageManager;
+import com.raphfrk.craftproxycommon.message.SubMessage;
 
 public class P16xProtocol extends Protocol {
 	

@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import com.raphfrk.craftproxyclient.CraftProxyClient;
-import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
@@ -35,6 +34,7 @@ import com.raphfrk.craftproxyclient.net.protocol.Protocol;
 import com.raphfrk.craftproxyclient.net.protocol.p162.P162Protocol;
 import com.raphfrk.craftproxyclient.net.protocol.p164.P164Protocol;
 import com.raphfrk.craftproxyclient.net.protocol.p16x.P16xHandshake;
+import com.raphfrk.craftproxycommon.message.SubMessage;
 
 public class P16xBootstrapProtocol extends Protocol {
 	

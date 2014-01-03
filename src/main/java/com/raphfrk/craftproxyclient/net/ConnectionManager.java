@@ -40,10 +40,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
-import com.raphfrk.craftproxyclient.hash.Hash;
-import com.raphfrk.craftproxyclient.hash.HashStore;
-import com.raphfrk.craftproxyclient.hash.tree.HashTreeSet;
-import com.raphfrk.craftproxyclient.message.MessageManager;
+import com.raphfrk.craftproxycommon.hash.Hash;
+import com.raphfrk.craftproxycommon.hash.HashStore;
+import com.raphfrk.craftproxycommon.hash.tree.HashTreeSet;
+import com.raphfrk.craftproxycommon.message.MessageManager;
 
 public class ConnectionManager {
 	

@@ -48,10 +48,10 @@ import javax.swing.border.TitledBorder;
 
 import org.json.simple.JSONObject;
 
-import com.raphfrk.craftproxyclient.io.FileSizeUpdatable;
-import com.raphfrk.craftproxyclient.io.PropertiesFile;
 import com.raphfrk.craftproxyclient.net.ConnectionListener;
 import com.raphfrk.craftproxyclient.net.auth.AuthManager;
+import com.raphfrk.craftproxycommon.io.FileSizeUpdatable;
+import com.raphfrk.craftproxycommon.io.PropertiesFile;
 
 public class CraftProxyGUI extends JFrame implements WindowListener, ActionListener, FileSizeUpdatable {
 	

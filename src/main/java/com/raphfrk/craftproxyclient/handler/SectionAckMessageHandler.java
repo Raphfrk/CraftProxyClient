@@ -23,7 +23,7 @@
  */
 package com.raphfrk.craftproxyclient.handler;
 
-import com.raphfrk.craftproxyclient.message.HashDataMessage;
+import com.raphfrk.craftproxycommon.message.HashDataMessage;
 
 public class SectionAckMessageHandler extends Handler<HashDataMessage> {
 }

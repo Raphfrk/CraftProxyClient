@@ -26,7 +26,7 @@ package com.raphfrk.craftproxyclient.net.protocol;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import com.raphfrk.craftproxyclient.message.SubMessage;
+import com.raphfrk.craftproxycommon.message.SubMessage;
 
 public abstract class Protocol {
 	

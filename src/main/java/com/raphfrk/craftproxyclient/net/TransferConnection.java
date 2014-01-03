@@ -25,22 +25,21 @@ package com.raphfrk.craftproxyclient.net;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.raphfrk.craftproxyclient.handler.HandlerManager;
-import com.raphfrk.craftproxyclient.message.HashDataMessage;
-import com.raphfrk.craftproxyclient.message.HashRequestMessage;
-import com.raphfrk.craftproxyclient.message.InitMessage;
-import com.raphfrk.craftproxyclient.message.MessageManager;
-import com.raphfrk.craftproxyclient.message.SectionAckMessage;
-import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
+import com.raphfrk.craftproxycommon.message.HashDataMessage;
+import com.raphfrk.craftproxycommon.message.HashRequestMessage;
+import com.raphfrk.craftproxycommon.message.InitMessage;
+import com.raphfrk.craftproxycommon.message.MessageManager;
+import com.raphfrk.craftproxycommon.message.SectionAckMessage;
+import com.raphfrk.craftproxycommon.message.SubMessage;
 
 public class TransferConnection extends Thread {
 	

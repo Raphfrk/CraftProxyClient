@@ -29,9 +29,6 @@ import java.nio.charset.StandardCharsets;
 
 import org.json.simple.JSONObject;
 
-import com.raphfrk.craftproxyclient.message.MessageManager;
-import com.raphfrk.craftproxyclient.message.SubMessage;
-import com.raphfrk.craftproxyclient.net.protocol.CompressionManager;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
@@ -40,6 +37,9 @@ import com.raphfrk.craftproxyclient.net.protocol.p17x.P17xHandshake;
 import com.raphfrk.craftproxyclient.net.protocol.p17x.P17xKick;
 import com.raphfrk.craftproxyclient.net.types.VarIntStringType;
 import com.raphfrk.craftproxyclient.net.types.values.BulkData;
+import com.raphfrk.craftproxycommon.compression.CompressionManager;
+import com.raphfrk.craftproxycommon.message.MessageManager;
+import com.raphfrk.craftproxycommon.message.SubMessage;
 
 public class P172PlayProtocol extends Protocol {
 	

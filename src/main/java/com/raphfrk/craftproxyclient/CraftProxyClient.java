@@ -31,7 +31,7 @@ import javax.swing.SwingUtilities;
 import com.raphfrk.craftproxyclient.crypt.Crypt;
 import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.gui.GUIManager;
-import com.raphfrk.craftproxyclient.io.HashFileStore;
+import com.raphfrk.craftproxycommon.io.HashFileStore;
 
 public class CraftProxyClient {
 	

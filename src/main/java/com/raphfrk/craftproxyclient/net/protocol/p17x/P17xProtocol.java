@@ -26,12 +26,12 @@ package com.raphfrk.craftproxyclient.net.protocol.p17x;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import com.raphfrk.craftproxyclient.message.SubMessage;
 import com.raphfrk.craftproxyclient.net.protocol.Handshake;
 import com.raphfrk.craftproxyclient.net.protocol.Packet;
 import com.raphfrk.craftproxyclient.net.protocol.PacketChannel;
 import com.raphfrk.craftproxyclient.net.protocol.Protocol;
 import com.raphfrk.craftproxyclient.net.protocol.p172Play.P172PlayProtocol;
+import com.raphfrk.craftproxycommon.message.SubMessage;
 
 public class P17xProtocol extends Protocol {
 	
