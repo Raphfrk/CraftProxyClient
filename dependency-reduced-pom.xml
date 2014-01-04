@@ -5,55 +5,46 @@
   <artifactId>craftproxyclient</artifactId>
   <name>CraftProxyClient</name>
   <version>dev-SNAPSHOT</version>
-  <description>CraftProxyClient is a local proxy for caching chunks</description>
-  <url>http://raphfrk.com</url>
+  <description>Client for local caching of chunk data</description>
+  <url>https://github.com/Raphfrk/CraftProxyClient</url>
   <inceptionYear>2013</inceptionYear>
+  <developers>
+    <developer>
+      <id>Raphfrk</id>
+      <name>Raphfrk</name>
+      <email>raphfrk@gmail.com</email>
+    </developer>
+  </developers>
   <organization>
     <name>Raphfrk</name>
     <url>http://raphfrk.com</url>
   </organization>
   <build>
-    <defaultGoal>clean package</defaultGoal>
+    <defaultGoal>clean install</defaultGoal>
     <resources>
       <resource>
         <targetPath>.</targetPath>
-        <directory>${basedir}</directory>
+        <directory>.</directory>
         <includes>
           <include>LICENSE.txt</include>
         </includes>
       </resource>
       <resource>
-        <directory>src/resources</directory>
+        <targetPath>.</targetPath>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/*</include>
+        </includes>
+      </resource>
+      <resource>
+        <targetPath>.</targetPath>
+        <filtering>true</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>*.yml</include>
+        </includes>
       </resource>
     </resources>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>com.sourcesense.maven</groupId>
-                    <artifactId>maven-nosnapshot-plugin</artifactId>
-                    <versionRange>[0.0.7-SNAPSHOT,)</versionRange>
-                    <goals>
-                      <goal>strip</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
@@ -65,65 +56,90 @@
             <goals>
               <goal>format</goal>
             </goals>
+            <configuration>
+              <properties>
+                <name>${project.name}</name>
+                <url>${project.organization.url}</url>
+                <inceptionYear>${project.inceptionYear}</inceptionYear>
+                <organization>${project.organization.name}</organization>
+              </properties>
+              <quiet>true</quiet>
+              <encoding>UTF-8</encoding>
+              <strictCheck>true</strictCheck>
+              <header>HEADER.txt</header>
+              <mapping>
+                <java>SLASHSTAR_STYLE</java>
+              </mapping>
+              <keywords>
+                <keyword>${project.name}</keyword>
+                <keyword>license</keyword>
+              </keywords>
+              <includes>
+                <include>src/main/java/**</include>
+                <include>src/test/java/**</include>
+              </includes>
+              <properties>
+                <name>${project.name}</name>
+                <url>${project.organization.url}</url>
+                <copyright>Copyright (c) ${project.inceptionYear}-2014, ${project.organization.name}</copyright>
+              </properties>
+            </configuration>
           </execution>
         </executions>
-        <configuration>
-          <quiet>true</quiet>
-          <encoding>UTF-8</encoding>
-          <strictCheck>true</strictCheck>
-          <header>${basedir}/HEADER.txt</header>
-          <keywords>
-            <keyword>${project.name}</keyword>
-            <keyword>license</keyword>
-          </keywords>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
-          <properties>
-            <name>${project.name}</name>
-            <url>${project.organization.url}</url>
-            <copyright>Copyright (c) ${project.inceptionYear}-2014, ${project.organization.name}</copyright>
-          </properties>
-          <includes>
-            <include>src/main/java/**</include>
-            <include>src/test/java/**</include>
-          </includes>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.sourcesense.maven</groupId>
-        <artifactId>maven-nosnapshot-plugin</artifactId>
-        <version>0.0.7-SNAPSHOT</version>
-        <executions>
-          <execution>
-            <phase>initialize</phase>
-            <goals>
-              <goal>strip</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <version>${project.version}</version>
-          <propertyName>releaseVersion</propertyName>
-        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.4</version>
+        <version>3.1</version>
         <configuration>
           <source>1.7</source>
           <target>1.7</target>
           <compilerArguments>
             <O>-Xlint:all</O>
             <O>-Xlint:-path</O>
+            <O>-Xlint:unchecked</O>
           </compilerArguments>
           <showWarnings>true</showWarnings>
           <showDeprecation>true</showDeprecation>
         </configuration>
       </plugin>
       <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Main-Class>${mainClass}</Main-Class>
+              <Implementation-Title>${project.name}</Implementation-Title>
+              <Implementation-Version>${project.version}+${ciSystem}-b${buildNumber}.git-${commit}</Implementation-Version>
+              <Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
+              <Specification-Title>${project.name}</Specification-Title>
+              <Specification-Version>${project.version}+${ciSystem}-b${buildNumber}.git-${commit}</Specification-Version>
+              <Specification-Vendor>${project.organization.name}</Specification-Vendor>
+              <Sealed>true</Sealed>
+            </manifestEntries>
+            <manifestSections>
+              <manifestSection>
+                <name>org/spout/</name>
+                <manifestEntries>
+                  <Sealed>true</Sealed>
+                </manifestEntries>
+              </manifestSection>
+            </manifestSections>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.15</version>
+        <configuration>
+          <systemPropertyVariables>
+            <protocol>${protocolVersion}</protocol>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>2.2</version>
+        <version>2.1</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -132,11 +148,12 @@
             </goals>
             <configuration>
               <minimizeJar>true</minimizeJar>
-              <transformers>
-                <transformer>
-                  <mainClass>com.raphfrk.craftproxyclient.CraftProxyClient</mainClass>
-                </transformer>
-              </transformers>
+              <relocations>
+                <relocation>
+                  <pattern>com.google.gson</pattern>
+                  <shadedPattern>${project.groupId}.lib.gson</shadedPattern>
+                </relocation>
+              </relocations>
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
@@ -150,7 +167,6 @@
                     <exclude>**/LICENSE</exclude>
                     <exclude>**/NOTICE</exclude>
                     <exclude>**/DEPENDENCIES</exclude>
-                    <exclude>**/*.java</exclude>
                   </excludes>
                 </filter>
               </filters>
@@ -158,25 +174,27 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.12</version>
-        <configuration>
-          <redirectTestOutputToFile>true</redirectTestOutputToFile>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
   <repositories>
-    <repository>
-      <id>bukkit-repo</id>
-      <url>http://repo.bukkit.org/content/groups/public/</url>
-    </repository>
     <repository>
       <id>repo</id>
       <url>https://raw.github.com/Raphfrk/maven-repo/master/releases</url>
     </repository>
   </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>sonatype-nexus-releases</id>
+      <url>https://oss.sonatype.org/content/repositories/releases</url>
+    </pluginRepository>
+    <pluginRepository>
+      <snapshots>
+        <updatePolicy>always</updatePolicy>
+      </snapshots>
+      <id>sonatype-nexus-snapshots</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </pluginRepository>
+  </pluginRepositories>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -191,8 +209,23 @@
       </exclusions>
     </dependency>
   </dependencies>
+  <reporting>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.15</version>
+        <configuration>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
   <properties>
+    <buildNumber>0</buildNumber>
+    <mainClass>${project.groupId}.${project.artifactId}.${project.name}</mainClass>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <commit>unknown</commit>
+    <ciSystem>unknown</ciSystem>
   </properties>
 </project>
 
