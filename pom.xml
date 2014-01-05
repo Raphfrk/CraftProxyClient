@@ -39,6 +39,10 @@
 		<repository>
 			<id>repo</id>
 			<url>https://raw.github.com/Raphfrk/maven-repo/master/releases</url>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
 		</repository>
 	</repositories>
 
