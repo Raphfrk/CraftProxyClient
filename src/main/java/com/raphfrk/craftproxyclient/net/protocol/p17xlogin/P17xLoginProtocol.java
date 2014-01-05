@@ -110,24 +110,28 @@ public class P17xLoginProtocol extends P17xProtocol {
 		if (this.isKickMessage(id, false)) {
 			server.transferPacket(client);
 			return null;
-		} else if (id != 0x01) {
-			sendKick("Expecting Encrypt Key Request packet", client);
+		} else if (id != 0x01 && id != 0x02) {
+			sendKick("Expecting Encrypt Key Request or Login Success packet from server, got " + id, client);
 			return null;
 		}
 		
-		P17xEncryptionKeyRequest request = new P17xEncryptionKeyRequest(server.getPacket());
-		
-		byte[] secret = Crypt.getBytes(16);
-		
-		if (!authSession(secret, client, request)) {
-			return null;
+		if (id == 0x01) {
+			P17xEncryptionKeyRequest request = new P17xEncryptionKeyRequest(server.getPacket());
+
+			byte[] secret = Crypt.getBytes(16);
+
+			if (!authSession(secret, client, request)) {
+				return null;
+			}
+
+			if (!sendEncryptionKeyResponse(secret, client, server, request)) {
+				return null;
+			}
+
+			enableEncryption(server, client, secret);
+		} else {
+			setMultiByteChannels(server, client);
 		}
-		
-		if (!sendEncryptionKeyResponse(secret, client, server, request)) {
-			return null;
-		}
-		
-		enableEncryption(server, client, secret);
 		
 		id = server.getPacketId();
 		if (this.isKickMessage(id, false)) {
@@ -135,7 +139,7 @@ public class P17xLoginProtocol extends P17xProtocol {
 			return null;
 		} if (id != 0x02) {
 			System.out.println("Id is " + id);
-			sendKick("Expecting Login Success packet", client);
+			sendKick("Expecting Login Success packet, got " + id, client);
 			return null;
 		}
 		
@@ -200,11 +204,18 @@ public class P17xLoginProtocol extends P17xProtocol {
 		server.setWrappedChannel(new CryptByteChannelWrapper(server.getRawChannel(), out, in));
 	}
 	
+	private void setMultiByteChannels(PacketChannel server, PacketChannel client) {
+		// Unencrypted
+		client.setWrappedChannel(client.getRawChannel());
+		server.setWrappedChannel(server.getRawChannel());
+	}
+	
 	@Override
 	public void sendKick(String message, PacketChannel client) throws IOException {
 		client.writePacket(getKick(message));
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public Packet getKick(String message) {
 		JSONObject obj = new JSONObject();

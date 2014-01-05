@@ -105,28 +105,6 @@
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <version>2.4</version>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Main-Class>${mainClass}</Main-Class>
-              <Implementation-Title>${project.name}</Implementation-Title>
-              <Implementation-Version>${project.version}+${ciSystem}-b${buildNumber}.git-${commit}</Implementation-Version>
-              <Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
-              <Specification-Title>${project.name}</Specification-Title>
-              <Specification-Version>${project.version}+${ciSystem}-b${buildNumber}.git-${commit}</Specification-Version>
-              <Specification-Vendor>${project.organization.name}</Specification-Vendor>
-              <Sealed>true</Sealed>
-            </manifestEntries>
-            <manifestSections>
-              <manifestSection>
-                <name>org/spout/</name>
-                <manifestEntries>
-                  <Sealed>true</Sealed>
-                </manifestEntries>
-              </manifestSection>
-            </manifestSections>
-          </archive>
-        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -148,12 +126,6 @@
             </goals>
             <configuration>
               <minimizeJar>true</minimizeJar>
-              <relocations>
-                <relocation>
-                  <pattern>com.google.gson</pattern>
-                  <shadedPattern>${project.groupId}.lib.gson</shadedPattern>
-                </relocation>
-              </relocations>
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
@@ -170,6 +142,21 @@
                   </excludes>
                 </filter>
               </filters>
+              <transformers>
+                <transformer>
+                  <manifestEntries>
+                    <Main-Class>${mainClass}</Main-Class>
+                    <Implementation-Title>${project.name}</Implementation-Title>
+                    <Implementation-Version>${project.version}+${ciSystem}-b${buildNumber}.git-${commit}</Implementation-Version>
+                    <Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
+                    <Build-Number>${env.BUILD_ID}</Build-Number>
+                    <Specification-Title>${project.name}</Specification-Title>
+                    <Specification-Version>${project.version}+${ciSystem}-b${buildNumber}.git-${commit}</Specification-Version>
+                    <Specification-Vendor>${project.organization.name}</Specification-Vendor>
+                    <Sealed>true</Sealed>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
             </configuration>
           </execution>
         </executions>

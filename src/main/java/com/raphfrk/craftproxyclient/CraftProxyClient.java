@@ -32,14 +32,15 @@ import com.raphfrk.craftproxyclient.crypt.Crypt;
 import com.raphfrk.craftproxyclient.gui.CraftProxyGUI;
 import com.raphfrk.craftproxyclient.gui.GUIManager;
 import com.raphfrk.craftproxycommon.io.HashFileStore;
+import com.raphfrk.craftproxycommon.io.ManifestManager;
 
 public class CraftProxyClient {
 	
 	private static CraftProxyClient instance;
 	private final CraftProxyGUI gui;
 	
-	private CraftProxyClient() {
-		gui = new CraftProxyGUI();
+	private CraftProxyClient(String buildId) {
+		gui = new CraftProxyGUI(buildId);
 	}
 	
 	private boolean init() {
@@ -63,9 +64,16 @@ public class CraftProxyClient {
 	}
 	
 	public static void main(String[] args) {
+		String id = ManifestManager.get("Build-Number");
+		final String buildId;
+		if (id == null) {
+			buildId = "dev";
+		} else {
+			buildId = "b" + id;
+		}
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				instance = new CraftProxyClient();
+				instance = new CraftProxyClient(buildId);
 				if (!instance.init()) {
 					instance.gui.dispose();
 				}

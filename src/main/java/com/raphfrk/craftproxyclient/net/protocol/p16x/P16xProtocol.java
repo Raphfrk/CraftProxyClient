@@ -100,7 +100,7 @@ public class P16xProtocol extends Protocol {
 			server.transferPacket(client);
 			return null;
 		} else if (id != 0xFD) {
-			sendKick("Expecting Encrypt Key Request packet", client);
+			sendKick("Expecting Encrypt Key Request packet from server, got " + id, client);
 			return null;
 		}
 		
@@ -127,7 +127,7 @@ public class P16xProtocol extends Protocol {
 			server.transferPacket(client);
 			return null;
 		} if (id != 0xFC) {
-			sendKick("Expecting Encrypt Key Response packet from server", client);
+			sendKick("Expecting Encrypt Key Response packet from server, got " + id, client);
 			return null;
 		}
 		
@@ -140,7 +140,7 @@ public class P16xProtocol extends Protocol {
 		byte[] clientSecret;
 		id = client.getPacketId();
 		if (id != 0xFC) {
-			sendKick("Expected Encrypt Key Response packet from client", client);
+			sendKick("Expected Encrypt Key Response packet from client, got " + id, client);
 			return null;
 		}
 		

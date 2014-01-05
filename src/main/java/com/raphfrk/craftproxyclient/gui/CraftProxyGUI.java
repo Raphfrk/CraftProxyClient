@@ -83,7 +83,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 	
 	private ConnectionListener connectionListener;
 
-	public CraftProxyGUI() {
+	public CraftProxyGUI(String buildId) {
 		
 		pf = new PropertiesFile("CraftProxyClientGUI.txt");
 
@@ -104,7 +104,7 @@ public class CraftProxyGUI extends JFrame implements WindowListener, ActionListe
 			JOptionPane.showMessageDialog(CraftProxyGUI.this, "Unable to save settings file");
 		}
 
-		setTitle("CraftProxyClient Local");
+		setTitle("CraftProxyClient Local (" + buildId + ")");
 		setSize(500,375);
 		setLocation(40,150);
 
