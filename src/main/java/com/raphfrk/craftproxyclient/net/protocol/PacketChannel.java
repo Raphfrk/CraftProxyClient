@@ -252,8 +252,6 @@ public class PacketChannel {
 			dataIn.addAndGet(length);
 			if (packetChannel != null) {
 				packetChannel.dataOut.addAndGet(length);
-			} else {
-				System.out.println("Unable to update bandwidth");
 			}
 			limit = buf.limit();
 			while (length > 0) {
@@ -284,8 +282,6 @@ public class PacketChannel {
 		dataIn.addAndGet(count);
 		if (packetChannel != null) {
 			packetChannel.dataOut.addAndGet(count);
-		} else {
-			System.out.println("Unable to update bandwidth");
 		}
 		int limit = buf.limit();
 		buf.limit(buf.position() + count);
